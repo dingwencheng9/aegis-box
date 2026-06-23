@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 GitHub Discussions
+    url: https://github.com/nexo/aegis-box/discussions
+    about: Ask questions, share ideas, and discuss Aegis Box with the community
+  - name: 🐦 Twitter
+    url: https://twitter.com/aegis_box
+    about: Follow us for updates and announcements
+  - name: 📖 Documentation
+    url: https://github.com/nexo/aegis-box#readme
+    about: Read the full documentation

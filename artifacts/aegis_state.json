@@ -1,0 +1,82 @@
+{
+  "session_id": "20260623-212225",
+  "start_time": "2026-06-23T21:22:25.389269",
+  "end_time": "2026-06-23T21:22:32.396639",
+  "steps": [
+    {
+      "step_name": "sweep",
+      "state": "success",
+      "start_time": "2026-06-23T21:22:25.389311",
+      "end_time": "2026-06-23T21:22:26.390768",
+      "error_message": null,
+      "artifacts": {
+        "files_scanned": 1000,
+        "files_cleaned": 50,
+        "space_freed_mb": 100
+      }
+    },
+    {
+      "step_name": "reduce",
+      "state": "success",
+      "start_time": "2026-06-23T21:22:26.392007",
+      "end_time": "2026-06-23T21:22:28.393187",
+      "error_message": null,
+      "artifacts": {
+        "vulnerabilities_found": 3,
+        "critical": 1,
+        "high": 2,
+        "medium": 0
+      }
+    },
+    {
+      "step_name": "patch",
+      "state": "success",
+      "start_time": "2026-06-23T21:22:28.393672",
+      "end_time": "2026-06-23T21:22:31.394647",
+      "error_message": null,
+      "artifacts": {
+        "vulnerabilities_fixed": 2,
+        "vulnerabilities_failed": 1,
+        "success_rate": 0.67
+      }
+    },
+    {
+      "step_name": "context_sync",
+      "state": "success",
+      "start_time": "2026-06-23T21:22:31.395211",
+      "end_time": "2026-06-23T21:22:32.396162",
+      "error_message": null,
+      "artifacts": {
+        "target_file": ".cursorrules",
+        "injected": true
+      }
+    }
+  ],
+  "overall_state": "success",
+  "summary": {
+    "total_steps": 4,
+    "success_steps": 4,
+    "failed_steps": 0,
+    "overall_state": "success",
+    "sweep_artifacts": {
+      "files_scanned": 1000,
+      "files_cleaned": 50,
+      "space_freed_mb": 100
+    },
+    "reduce_artifacts": {
+      "vulnerabilities_found": 3,
+      "critical": 1,
+      "high": 2,
+      "medium": 0
+    },
+    "patch_artifacts": {
+      "vulnerabilities_fixed": 2,
+      "vulnerabilities_failed": 1,
+      "success_rate": 0.67
+    },
+    "context_sync_artifacts": {
+      "target_file": ".cursorrules",
+      "injected": true
+    }
+  }
+}

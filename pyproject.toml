@@ -1,0 +1,314 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis-box"
+version = "0.1.0"
+description = "Full-stack Intelligent Audit and Auto-healing Engine - The Ultimate Sidekick for Claude Code & Cursor"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Nexo", email = "nexo@example.com"}
+]
+maintainers = [
+    {name = "Nexo", email = "nexo@example.com"}
+]
+keywords = [
+    "security",
+    "audit",
+    "code-analysis",
+    "ast",
+    "llm",
+    "ai-assistant",
+    "static-analysis",
+    "vulnerability-detection",
+    "auto-healing",
+    "claude-code",
+    "cursor"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+requires-python = ">=3.13"
+dependencies = [
+    # CLI Framework
+    "typer[all]>=0.26.0,<1.0.0",
+
+    # Data Validation & Settings
+    "pydantic>=2.13.0,<3.0.0",
+    "pydantic-settings>=2.7.0,<3.0.0",
+
+    # Configuration
+    "pyyaml>=6.0.3,<7.0.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+
+    # Logging
+    "loguru>=0.7.3,<1.0.0",
+
+    # LLM Integration
+    "litellm>=1.55.0,<2.0.0",
+    "httpx>=0.28.0,<1.0.0",
+    "anthropic>=0.40.0,<1.0.0",  # Direct Anthropic SDK
+    "openai>=1.58.0,<2.0.0",      # Direct OpenAI SDK
+
+    # Async & Rate Limiting
+    "aiolimiter>=1.2.0,<2.0.0",
+    "aiofiles>=24.1.0,<25.0.0",
+    "asyncio-throttle>=1.0.2,<2.0.0",
+
+    # Git Operations
+    "gitpython>=3.1.43,<4.0.0",
+
+    # AST Parsing
+    "tree-sitter>=0.23.0,<1.0.0",
+    "tree-sitter-python>=0.23.0,<1.0.0",
+    "tree-sitter-javascript>=0.23.0,<1.0.0",
+    "tree-sitter-typescript>=0.23.0,<1.0.0",
+]
+
+[project.optional-dependencies]
+# Development tools
+dev = [
+    "pytest>=8.3.0,<9.0.0",
+    "pytest-asyncio>=0.24.0,<1.0.0",
+    "pytest-cov>=6.0.0,<7.0.0",
+    "pytest-xdist>=3.6.0,<4.0.0",  # Parallel testing
+    "pytest-timeout>=2.3.0,<3.0.0",
+    "black>=24.10.0,<25.0.0",
+    "isort>=5.13.0,<6.0.0",
+    "ruff>=0.9.0,<1.0.0",
+    "mypy>=1.15.0,<2.0.0",
+    "types-PyYAML>=6.0.0",
+    "types-aiofiles>=24.0.0",
+    "pre-commit>=4.0.0,<5.0.0",
+]
+
+# Documentation
+docs = [
+    "mkdocs>=1.6.0,<2.0.0",
+    "mkdocs-material>=9.5.0,<10.0.0",
+    "mkdocstrings[python]>=0.27.0,<1.0.0",
+]
+
+# Additional AST Language Support
+languages = [
+    "tree-sitter-rust>=0.23.0,<1.0.0",
+    "tree-sitter-go>=0.23.0,<1.0.0",
+    "tree-sitter-java>=0.23.0,<1.0.0",
+    "tree-sitter-cpp>=0.23.0,<1.0.0",
+]
+
+# Security scanning
+security = [
+    "bandit>=1.8.0,<2.0.0",
+    "safety>=3.2.0,<4.0.0",
+    "pip-audit>=2.8.0,<3.0.0",
+]
+
+# All extras
+all = [
+    "aegis-box[dev,docs,languages,security]",
+]
+
+[project.urls]
+Homepage = "https://github.com/nexo/aegis-box"
+Documentation = "https://github.com/nexo/aegis-box#readme"
+Repository = "https://github.com/nexo/aegis-box"
+Issues = "https://github.com/nexo/aegis-box/issues"
+Changelog = "https://github.com/nexo/aegis-box/blob/main/CHANGELOG.md"
+
+[project.scripts]
+aegis = "aegis.cli:app"
+
+[tool.setuptools]
+packages = ["aegis"]
+
+[tool.setuptools.package-data]
+aegis = ["py.typed"]
+
+# ==========================================
+# Black Configuration
+# ==========================================
+[tool.black]
+line-length = 88
+target-version = ['py313']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | build
+  | dist
+  | \.eggs
+  | \.pytest_cache
+)/
+'''
+
+# ==========================================
+# isort Configuration
+# ==========================================
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = ["venv/*", ".venv/*", "build/*", "dist/*"]
+
+# ==========================================
+# Ruff Configuration
+# ==========================================
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    ".eggs",
+    ".pytest_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # flake8-simplify
+    "RUF", # Ruff-specific rules
+]
+ignore = [
+    "E501",  # Line too long (handled by black)
+    "B008",  # Do not perform function calls in argument defaults
+    "C901",  # Too complex (we'll handle this case by case)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401", "F403"]
+"tests/*" = ["S101", "S105", "S106"]
+
+# ==========================================
+# MyPy Configuration
+# ==========================================
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+strict_concatenate = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+
+[[tool.mypy.overrides]]
+module = [
+    "litellm.*",
+    "tree_sitter.*",
+    "aiolimiter.*",
+    "git.*",
+]
+ignore_missing_imports = true
+
+# ==========================================
+# Pytest Configuration
+# ==========================================
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+    "--tb=short",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests",
+    "asyncio: Async tests",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+# ==========================================
+# Coverage Configuration
+# ==========================================
+[tool.coverage.run]
+source = ["aegis"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# ==========================================
+# Bandit Configuration (Security)
+# ==========================================
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".venv"]
+skips = ["B101", "B601"]  # assert_used, paramiko_calls
+
+# ==========================================
+# Pre-commit Configuration Reference
+# ==========================================
+# Create .pre-commit-config.yaml separately if needed

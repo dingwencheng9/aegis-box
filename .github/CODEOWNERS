@@ -1,0 +1,25 @@
+# Aegis Box Code Owners
+# These users will be automatically requested for review when someone opens a PR
+
+# Default owners for everything in the repo
+*       @nexo
+
+# Core engine modules require thorough review
+/aegis/engines/     @nexo
+/aegis/ast_utils/   @nexo
+/aegis/llm/         @nexo
+
+# Tests require review to ensure quality
+/tests/             @nexo
+
+# Documentation changes can be reviewed by community maintainers
+*.md                @nexo
+/docs/              @nexo
+
+# GitHub workflows and CI/CD
+/.github/           @nexo
+
+# Configuration files
+*.yaml              @nexo
+*.yml               @nexo
+pyproject.toml      @nexo

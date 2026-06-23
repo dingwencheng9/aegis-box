@@ -1,0 +1,211 @@
+name: 🛡️ Aegis CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} - Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.13"]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
+
+      - name: 🧪 Run tests with pytest
+        run: |
+          pytest tests/ -v --tb=short --cov=aegis --cov-report=term-missing --cov-report=xml
+
+      - name: 📊 Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: aegis-coverage
+          fail_ci_if_error: false
+
+      - name: 🔍 Run ruff linter
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          ruff check aegis/ --output-format=github
+
+      - name: 🎨 Check code formatting with black
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          black --check aegis/
+
+      - name: 🔒 Run security checks with bandit
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          bandit -r aegis/ -f json -o bandit-report.json || true
+          cat bandit-report.json
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: ⚡ Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
+
+      - name: 🔍 Run mypy type checker
+        run: |
+          mypy aegis/ --show-error-codes --pretty
+
+  critical-modules:
+    name: 🎯 Critical Modules Test (Mapper & Patcher)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: ⚡ Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
+
+      - name: 🛡️ Test Mapper (AST Extraction)
+        run: |
+          pytest tests/test_mapper.py -v --tb=short
+
+      - name: 🩹 Test Patcher (Smart Patching)
+        run: |
+          pytest tests/test_patcher.py -v --tb=short
+
+      - name: 🔗 Test Integration (Mapper -> Patcher)
+        run: |
+          pytest tests/test_integration.py -v --tb=short --no-cov
+
+  build:
+    name: Build & Verify Package
+    runs-on: ubuntu-latest
+    needs: [test, type-check, critical-modules]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: 📦 Install build tools
+        run: |
+          pip install build twine
+
+      - name: 🏗️ Build package
+        run: |
+          python -m build
+
+      - name: 🔍 Check package with twine
+        run: |
+          twine check dist/*
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: ⚡ Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 📦 Install dependencies
+        run: |
+          uv pip install --system -e ".[security]"
+
+      - name: 🔒 Run pip-audit
+        run: |
+          pip-audit --desc --skip-editable
+
+      - name: 🛡️ Run safety check
+        run: |
+          safety check --json || true
+
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: ⚡ Install uv
+        uses: astral-sh@v5
+        with:
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv pip install --system -e ".[docs]"
+
+      - name: 📚 Build docs with mkdocs
+        run: |
+          mkdocs build --strict

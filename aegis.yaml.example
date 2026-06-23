@@ -1,0 +1,103 @@
+# 🛡️ Aegis 配置示例文件
+# 复制此文件为 aegis.yaml 并根据项目需求修改
+
+version: "1.0"
+
+# 三级模型架构配置
+llm:
+  # Tier 1: 快速探伤（廉价高速）
+  tier1_fast:
+    provider: "zhipu"
+    model: "glm-4-air"
+    api_key_env_var: "ZHIPU_API_KEY"
+    # endpoint: "https://custom-endpoint.com"  # 可选：自定义端点
+
+  # Tier 2: 架构推理（中等成本）
+  tier2_reasoning:
+    provider: "anthropic"
+    model: "claude-3-5-haiku-20241022"
+    api_key_env_var: "ANTHROPIC_API_KEY"
+
+  # Tier 3: 补丁生成（最强模型）
+  tier3_patching:
+    provider: "anthropic"
+    model: "claude-3-5-sonnet-20241022"
+    api_key_env_var: "ANTHROPIC_API_KEY"
+
+# 速率限制配置
+rate_limit:
+  global_qps: 10  # 全局每秒请求数
+  provider_limits:
+    openai: 50      # 每分钟请求数
+    anthropic: 40
+    zhipu: 100
+    ollama: 1000    # 本地模型几乎无限制
+  token_bucket_capacity: 1000
+  token_bucket_refill_rate: 10
+
+# AST 提取配置
+ast:
+  max_function_lines: 100      # 超过此行数的函数将被截断
+  context_lines: 10            # 截断时保留的头尾行数
+  preserve_comments:
+    - "TODO"
+    - "FIXME"
+    - "HACK"
+    - "XXX"
+    - "NOTE"
+  min_compression_ratio: 0.1   # 目标压缩率 (10%)
+
+# Git 沙盒配置
+git:
+  auto_stash: true             # 补丁前自动 stash
+  branch_prefix: "aegis-patch" # 补丁分支前缀
+  verify_syntax: true          # 应用补丁后验证语法
+
+# 忽略规则
+ignore_dirs:
+  - ".git"
+  - ".idea"
+  - ".vscode"
+  - "node_modules"
+  - "venv"
+  - "__pycache__"
+  - "dist"
+  - "build"
+  - ".next"
+  - ".nuxt"
+  - "target"        # Rust
+  - "vendor"        # Go
+
+ignore_extensions:
+  - ".pyc"
+  - ".pyo"
+  - ".so"
+  - ".dll"
+  - ".dylib"
+  - ".class"
+  - ".o"
+  - ".a"
+  - ".log"
+  - ".lock"
+
+# 补丁容错配置
+fuzzy_match_threshold: 0.85  # SEARCH 块模糊匹配阈值 (0-1)
+
+# ============================================
+# 本地化部署示例（企业内网）
+# ============================================
+# llm:
+#   tier1_fast:
+#     provider: "ollama"
+#     model: "llama3.1:70b"
+#     endpoint: "http://localhost:11434"
+#   tier2_reasoning:
+#     provider: "vllm"
+#     model: "Qwen/Qwen2.5-72B-Instruct"
+#     endpoint: "https://internal-llm.company.com"
+#     api_key_env_var: "INTERNAL_API_KEY"
+#   tier3_patching:
+#     provider: "vllm"
+#     model: "deepseek-ai/DeepSeek-Coder-V2-Instruct"
+#     endpoint: "https://internal-llm.company.com"
+#     api_key_env_var: "INTERNAL_API_KEY"
