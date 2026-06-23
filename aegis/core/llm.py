@@ -378,6 +378,13 @@ class LLMClient:
             content = content[:-3]
         content = content.strip()
 
+        # 🔧 修复 Python 字面量 → JSON 标准
+        # GLM 有时返回 Python 语法（None, True, False）而非 JSON（null, true, false）
+        content = content.replace(": None", ": null")
+        content = content.replace(":None", ":null")
+        content = content.replace(": True", ": true")
+        content = content.replace(": False", ": false")
+
         # 解析 JSON
         try:
             return response_model.model_validate_json(content)
