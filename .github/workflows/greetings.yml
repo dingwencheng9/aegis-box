@@ -1,0 +1,82 @@
+name: 🤝 Community Greetings
+
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎉 Welcome First Time Contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-message: |
+            ## 🛡️ Welcome to Aegis Box!
+
+            Hey @${{ github.actor }}, thanks for opening your first issue!
+
+            **You're now part of something bigger** — a community building the future of AI-assisted development security. Every issue, every bug report, every feature request makes Aegis stronger.
+
+            ### 🚀 What happens next?
+
+            - A maintainer will review your issue within **24 hours** (usually much faster!)
+            - If this is a bug, we'll triage it and add appropriate labels
+            - If it's a feature request, we'll discuss whether it aligns with [our core values](https://github.com/dingwencheng9/aegis-box#roadmap)
+
+            ### 💡 While you wait
+
+            - Check out our [**CONTRIBUTING.md**](https://github.com/dingwencheng9/aegis-box/blob/main/CONTRIBUTING.md) for contribution guidelines
+            - Browse [**good first issues**](https://github.com/dingwencheng9/aegis-box/labels/good-first-issue) if you want to start contributing code
+            - Read the [**ROADMAP.md**](https://github.com/dingwencheng9/aegis-box/blob/main/ROADMAP.md) to see where we're headed (v0.2.0 is going to be 🔥)
+
+            ### 🎯 Fun fact
+
+            Aegis Box can **audit its own source code** and improve itself — it's called [The Ouroboros Protocol](https://github.com/dingwencheng9/aegis-box#-the-ouroboros-protocol-衔尾蛇自我进化能力). You're contributing to an AI that evolves itself. How cool is that?
+
+            ---
+
+            **🛡️ Let's make AI-assisted development safer, together!**
+
+          pr-message: |
+            ## 🎉 Welcome, Contributor!
+
+            Hey @${{ github.actor }}, **massive respect** for opening your first PR to Aegis Box!
+
+            You're not just submitting code — you're joining the **Aegis Vanguard**, the pioneers who shaped this project in its early days. Every merged PR from the first 10 external contributors earns a permanent spot in our [**HALL_OF_FAME.md**](https://github.com/dingwencheng9/aegis-box/blob/main/HALL_OF_FAME.md). 🏆
+
+            ### 🔍 Review process
+
+            1. **Automated checks** will run (CI/CD, linting, type checking)
+            2. A **maintainer will review** your code within 48 hours
+            3. We may request changes — don't take it personally, it's how we keep quality high
+            4. Once approved, we'll **merge** and you'll be immortalized in git history!
+
+            ### ✅ Before merging, please ensure
+
+            - [ ] All CI checks are passing (see above ⬆️)
+            - [ ] You've tested your changes locally
+            - [ ] Code follows our style guidelines (run `black` and `ruff`)
+            - [ ] You've updated documentation if needed
+            - [ ] You've added tests for new functionality
+
+            ### 📚 Resources
+
+            - [**CONTRIBUTING.md**](https://github.com/dingwencheng9/aegis-box/blob/main/CONTRIBUTING.md) — Full contribution guide
+            - [**Code Review Standards**](https://github.com/dingwencheng9/aegis-box/blob/main/CONTRIBUTING.md#code-review-process) — What we look for in PRs
+            - [**Development Workflow**](https://github.com/dingwencheng9/aegis-box/blob/main/CONTRIBUTING.md#development-workflow) — TDD, testing, and best practices
+
+            ### 🎖️ The Aegis Vanguard
+
+            If this PR merges, you'll join the elite group of **early contributors** who built Aegis Box from the ground up. We remember our pioneers. 🛡️
+
+            ---
+
+            **Thank you for your contribution! We're excited to review your code.** 🚀
