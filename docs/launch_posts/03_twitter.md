@@ -82,12 +82,12 @@ An AI that improves the AI that improves your code 🤯
 
 ## Tweet 7/7 – Try It + Contribute
 
-Install:
+Install in 60 seconds:
 
 ```
 pip install aegis-box
-aegis init
-aegis run --auto
+cp .env.example .env  # Add your API key
+aegis init && aegis run --auto
 ```
 
 GitHub: github.com/dingwencheng9/aegis-box
@@ -144,12 +144,12 @@ It's like having a senior engineer review every AI change before commit.
 
 ## Tweet 4/4 – CTA
 
-Try it:
+Try it in 60 seconds:
 
 ```
 pip install aegis-box
-aegis init
-aegis run --auto
+cp .env.example .env  # Add your key
+aegis init && aegis run --auto
 ```
 
 ⭐ Star on GitHub: github.com/dingwencheng9/aegis-box

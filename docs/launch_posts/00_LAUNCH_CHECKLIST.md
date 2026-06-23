@@ -177,7 +177,7 @@ python scripts/track_metrics.py --output metrics_day1_$(date +%H).json
 
 ### Primary CTA (All Platforms)
 
-"Try it: `pip install aegis-box && aegis init`"
+"Try it in 60 seconds: `pip install aegis-box && cp .env.example .env && aegis init`"
 
 ### Secondary CTA
 

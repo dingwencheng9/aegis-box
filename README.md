@@ -22,16 +22,45 @@
 
 ---
 
-## ⚡ Quick Start (3 minutes to see results)
+## ⚡ Quick Start (3 minutes to results)
+
+### Install from PyPI
 
 ```bash
 pip install aegis-box
+```
+
+### Get Your API Keys
+
+You'll need **one** of these:
+
+- **Anthropic** (Claude): Get free credits at [console.anthropic.com](https://console.anthropic.com/)
+- **智谱 AI** (GLM): Free tier at [open.bigmodel.cn](https://open.bigmodel.cn/)
+
+### Configure & Run
+
+```bash
+# 1. Copy the example config
+cp .env.example .env
+
+# 2. Edit .env and add your API key
+# ANTHROPIC_API_KEY=sk-ant-xxxxx  # Or ZHIPU_API_KEY=xxxxx
+
+# 3. Initialize and run
 cd your-project
 aegis init
 aegis run --auto
 ```
 
-**That's it!** Aegis will automatically audit your codebase, generate fixes, and sync context to your IDE.
+**That's it!** Aegis will:
+
+- ✅ Sweep garbage files
+- ✅ Extract 90% compressed AST skeletons
+- ✅ Audit for security vulnerabilities
+- ✅ Generate and apply fixes in a Git sandbox
+- ✅ Sync compressed context to your IDE
+
+**⏱️ First run takes ~2 minutes**. Subsequent runs are faster with caching.
 
 ---
 
@@ -139,77 +168,6 @@ git clone https://github.com/dingwencheng9/aegis-box.git
 cd aegis-box
 pip install -e .
 ```
-
----
-
-## ⚡ Quick Start
-
-### 1. Initialize Configuration
-
-```bash
-cd your-project
-aegis init
-```
-
-This generates an `aegis.yaml` configuration file in your project root.
-
-### 2. Configure API Keys
-
-Edit `aegis.yaml` to set your API keys:
-
-```yaml
-llm:
-  tier1_fast:
-    provider: "anthropic"
-    model: "claude-3-5-haiku-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-
-  tier2_reasoning:
-    provider: "anthropic"
-    model: "claude-3-5-sonnet-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-
-  tier3_patching:
-    provider: "anthropic"
-    model: "claude-3-5-sonnet-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-```
-
-**For local LLMs (Ollama)**:
-
-```yaml
-llm:
-  tier1_fast:
-    provider: "ollama"
-    model: "llama3:8b"
-    base_url: "http://localhost:11434"
-
-  tier2_reasoning:
-    provider: "ollama"
-    model: "codellama:34b"
-    base_url: "http://localhost:11434"
-```
-
-Set environment variables:
-
-```bash
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export OPENAI_API_KEY="your-openai-key"
-```
-
-### 3. Run Full-Pipeline Audit
-
-```bash
-aegis run --auto
-```
-
-**That's it!** Aegis will automatically:
-
-1. Sweep garbage files
-2. Extract code architecture (90% compressed)
-3. Audit for security vulnerabilities
-4. Generate and apply fix patches
-5. Sync context to your IDE
 
 ---
 
@@ -1217,32 +1175,99 @@ $ git pull
 
 ---
 
-## 🤝 贡献指南
+## ⚙️ Advanced Configuration
 
-欢迎贡献！请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+### Custom Model Selection
+
+Override default models via `.env`:
+
+```bash
+# Cost-optimized (recommended for most users)
+ZHIPU_MODEL_TIER1=glm-4-air
+ANTHROPIC_MODEL_TIER2=claude-3-5-haiku-20241022
+ANTHROPIC_MODEL_TIER3=claude-3-5-sonnet-20241022
+
+# High-performance (for production workloads)
+ANTHROPIC_MODEL_TIER1=claude-3-5-sonnet-20241022
+ANTHROPIC_MODEL_TIER2=claude-3-5-sonnet-20241022
+ANTHROPIC_MODEL_TIER3=claude-opus-4-8
+```
+
+### Local LLM Support (Ollama)
+
+For 100% offline, privacy-first operation:
+
+```bash
+# In .env
+TIER1_FAST_PROVIDER=ollama
+TIER1_FAST_MODEL=llama3:8b
+
+TIER2_REASONING_PROVIDER=ollama
+TIER2_REASONING_MODEL=codellama:34b
+
+TIER3_PATCHING_PROVIDER=ollama
+TIER3_PATCHING_MODEL=qwen:72b
+
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### Configuration Priority
+
+```
+1. Environment variables (.env)
+   ↓ (highest priority)
+2. aegis.yaml with ${VAR} references
+   ↓
+3. aegis.yaml static values
+   ↓
+4. Built-in defaults
+   ↓ (lowest priority)
+```
+
+### Multi-Environment Setup
+
+```bash
+# Development
+cp .env.development .env
+aegis run --auto  # Uses fast, cheap models
+
+# Production
+cp .env.production .env
+aegis run --auto  # Uses high-quality models
+```
+
+For full configuration options, see [.env.example](.env.example).
+
+---
+
+## 🤝 Contributing
+
+We're actively seeking contributors! The first 10 external contributors get permanent recognition as the **"Aegis Vanguard"** in our [Hall of Fame](HALL_OF_FAME.md).
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
 ## 📝 License
 
-MIT License - 详见 [LICENSE](LICENSE) 文件。
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 致谢
+## 🙏 Acknowledgments
 
-- [LiteLLM](https://github.com/BerriAI/litellm) - 统一的 LLM API 网关
-- [tree-sitter](https://tree-sitter.github.io/) - 增量解析库
-- [Typer](https://typer.tiangolo.com/) - 现代 CLI 框架
-- [Pydantic](https://pydantic-docs.helpmanual.io/) - 数据验证库
-
----
-
-## 📧 联系我们
-
-- **Issues**: [GitHub Issues](https://github.com/nexo/aegis-box/issues)
-- **Email**: nexo@example.com
+- **tree-sitter**: Language-agnostic AST parsing
+- **Anthropic Claude**: World-class reasoning models
+- **Rich**: Beautiful terminal output
+- **The open-source community**: For believing in safer AI-assisted development
 
 ---
 
-**🛡️ Aegis Box - 让 AI 辅助开发更安全、更高效！**
+## 📧 Contact
+
+- **Issues**: [GitHub Issues](https://github.com/dingwencheng9/aegis-box/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/dingwencheng9/aegis-box/discussions)
+
+---
+
+**🛡️ Aegis Box - Making AI-assisted development safer, together.**

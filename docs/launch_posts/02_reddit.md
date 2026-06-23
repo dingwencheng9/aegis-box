@@ -92,18 +92,18 @@ Aegis automatically routes each task to the right model. I've been using it for 
 
 This is the part that matters for r/LocalLLaMA folks:
 
-```yaml
-# aegis.yaml
-llm:
-  tier1_fast:
-    provider: ollama
-    model: llama3:8b
-  tier2_main:
-    provider: ollama
-    model: codellama:34b
-  tier3_reasoning:
-    provider: ollama
-    model: qwen:72b
+```bash
+# Just set these in .env - no complex YAML editing
+TIER1_FAST_PROVIDER=ollama
+TIER1_FAST_MODEL=llama3:8b
+
+TIER2_REASONING_PROVIDER=ollama
+TIER2_REASONING_MODEL=codellama:34b
+
+TIER3_PATCHING_PROVIDER=ollama
+TIER3_PATCHING_MODEL=qwen:72b
+
+OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 **Zero cloud dependency.** Your code never leaves your machine. Perfect for:
@@ -124,8 +124,8 @@ llm:
 
 ```bash
 pip install aegis-box
-aegis init
-aegis run --auto
+cp .env.example .env  # Add your API key or Ollama config
+aegis init && aegis run --auto
 ```
 
 ### What I Need From You

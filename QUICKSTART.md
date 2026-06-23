@@ -1,30 +1,29 @@
-# 🚀 Aegis Box - 快速开始指南
+# 🚀 Aegis Box - Quick Start Guide
 
-从零到运行，**3 分钟**看到效果。
+From zero to results in **3 minutes**.
 
 ---
 
-## 📋 前置要求
+## 📋 Prerequisites
 
 - Python 3.9+
-- pip 或 uv
-- Git（可选，用于沙盒保护）
-- API Keys（至少一个）:
-  - Anthropic API Key（推荐）
-  - OpenAI API Key
-  - Zhipu API Key
+- pip or uv
+- **One API Key** (choose one):
+  - **Anthropic** (recommended): Free credits at [console.anthropic.com](https://console.anthropic.com/)
+  - **智谱 AI** (cost-effective): Free tier at [open.bigmodel.cn](https://open.bigmodel.cn/)
+  - **OpenAI** (alternative): Credits at [platform.openai.com](https://platform.openai.com/)
 
 ---
 
-## ⚡ 3 分钟快速上手
+## ⚡ 3-Minute Setup
 
-### Step 1: 安装（30 秒）
+### Step 1: Install (30 seconds)
 
 ```bash
 pip install aegis-box
 ```
 
-或使用 uv（更快）：
+Or with uv (faster):
 
 ```bash
 uv pip install aegis-box
@@ -32,69 +31,78 @@ uv pip install aegis-box
 
 ---
 
-### Step 2: 初始化配置（60 秒）
+### Step 2: Get Your API Key (60 seconds)
+
+#### Option A: Anthropic (Recommended)
+
+1. Visit [console.anthropic.com](https://console.anthropic.com/)
+2. Sign up (free credits included)
+3. Go to **API Keys** → **Create Key**
+4. Copy your key (starts with `sk-ant-`)
+
+#### Option B: 智谱 AI (Cost-Effective)
+
+1. Visit [open.bigmodel.cn](https://open.bigmodel.cn/)
+2. 注册账号（免费额度）
+3. 进入 **API 管理** → **创建 API Key**
+4. 复制密钥
+
+#### Option C: OpenAI
+
+1. Visit [platform.openai.com](https://platform.openai.com/)
+2. Sign up and add credits
+3. Go to **API Keys** → **Create new secret key**
+4. Copy your key (starts with `sk-`)
+
+---
+
+### Step 3: Configure (30 seconds)
 
 ```bash
-# 进入你的项目目录
+# Copy the example config
+cp .env.example .env
+
+# Edit .env with your favorite editor
+nano .env  # or vim, code, etc.
+```
+
+**Add your API key** (uncomment and fill one):
+
+```bash
+# For Anthropic
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# For 智谱 AI
+ZHIPU_API_KEY=your-zhipu-key-here
+
+# For OpenAI
+OPENAI_API_KEY=sk-your-openai-key-here
+```
+
+**That's it!** You don't need to edit `aegis.yaml` — it reads from `.env` automatically.
+
+---
+
+### Step 4: Run (30 seconds)
+
+```bash
+# Go to your project
 cd your-project
 
-# 初始化配置
+# Initialize
 aegis init
-```
 
-这会在项目根目录生成 `aegis.yaml` 配置文件。
-
----
-
-### Step 3: 配置 API Keys（60 秒）
-
-编辑 `aegis.yaml`：
-
-```yaml
-version: "1.0"
-
-# 三级模型配置
-llm:
-  tier1_fast:
-    provider: "zhipu"
-    model: "glm-4-air"
-    api_key_env_var: "ZHIPU_API_KEY"
-
-  tier2_reasoning:
-    provider: "anthropic"
-    model: "claude-3-5-haiku-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-
-  tier3_patching:
-    provider: "anthropic"
-    model: "claude-3-5-sonnet-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-```
-
-设置环境变量：
-
-```bash
-export ANTHROPIC_API_KEY="sk-ant-xxx"
-export ZHIPU_API_KEY="xxx"
-```
-
-**提示**：你可以只配置一个 API Key，Aegis 会自动使用该模型。
-
----
-
-### Step 4: 一键运行（30 秒）
-
-```bash
+# Run full audit
 aegis run --auto
 ```
 
-**就这么简单！** Aegis 会自动：
+**Done!** Aegis will:
 
-1. 🧹 清扫垃圾文件
-2. 🔍 提取代码架构
-3. 🏛️ 审计安全漏洞
-4. 🩹 自动生成修复补丁
-5. 🔄 同步上下文到 IDE
+1. 🧹 Sweep garbage files
+2. 🔍 Extract code architecture (90% compressed)
+3. 🏛️ Audit security vulnerabilities
+4. 🩹 Generate and apply fixes
+5. 🔄 Sync context to your IDE
 
 ---
 
@@ -248,93 +256,74 @@ aegis version
 
 ---
 
-## 🔧 常见问题
+## 🔧 FAQ
 
-### Q1: 没有 API Key 怎么办？
+### Q1: I don't have an API key yet
 
-**A**: Aegis 支持多个 LLM 提供商，你至少需要一个：
+**A**: No problem! Get free credits:
 
-- **Anthropic** (推荐): https://console.anthropic.com/
-- **OpenAI**: https://platform.openai.com/
-- **Zhipu**: https://open.bigmodel.cn/
+- **Anthropic** (recommended): [console.anthropic.com](https://console.anthropic.com/) — Free $5 credits
+- **智谱 AI** (cost-effective): [open.bigmodel.cn](https://open.bigmodel.cn/) — Free tier included
+- **OpenAI**: [platform.openai.com](https://platform.openai.com/) — $5 free trial
 
-如果你只有一个 API Key，可以配置所有三级模型使用同一个：
-
-```yaml
-llm:
-  tier1_fast:
-    provider: "anthropic"
-    model: "claude-3-5-haiku-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-
-  tier2_reasoning:
-    provider: "anthropic"
-    model: "claude-3-5-haiku-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-
-  tier3_patching:
-    provider: "anthropic"
-    model: "claude-3-5-sonnet-20241022"
-    api_key_env_var: "ANTHROPIC_API_KEY"
-```
+Just pick one, sign up, and you're ready in 60 seconds.
 
 ---
 
-### Q2: 运行很慢怎么办？
+### Q2: Can I use only one API key?
 
-**A**: 可能的原因：
-
-1. **网络问题**: 检查是否能访问 LLM API
-2. **Token 过多**: 项目太大，考虑调整忽略规则
-3. **速率限制**: 降低 `rate_limit.global_qps`
-
-**优化建议**：
-
-```yaml
-# 忽略大文件/目录
-ignore_dirs:
-  - "node_modules"
-  - "venv"
-  - ".git"
-  - "dist"
-  - "build"
-
-ignore_extensions:
-  - ".pyc"
-  - ".log"
-  - ".lock"
-
-# 降低速率限制
-rate_limit:
-  global_qps: 5 # 降低到 5
-```
-
----
-
-### Q3: 补丁应用失败怎么办？
-
-**A**: Aegis 有自动回滚机制，不会损坏源文件。
-
-失败原因：
-
-1. **代码上下文不匹配**: 文件已被修改
-2. **语法错误**: LLM 生成的补丁有问题
-
-**解决方案**：
+**A**: Yes! Aegis works with a single provider. Just set one key in `.env`:
 
 ```bash
-# 重新运行（会自动重试）
-aegis run --continue
+# Use Anthropic for all tiers (recommended)
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+```
 
-# 或者手动修复
-aegis patch --review  # 查看 diff
+Aegis will automatically use this key for all operations.
+
+---
+
+### Q3: It's running slowly
+
+**A**: Possible causes:
+
+1. **Network issues**: Check your connection to the LLM API
+2. **Large project**: Add more ignore patterns in `.env`
+3. **Rate limits**: Reduce request rate
+
+**Quick fix**:
+
+```bash
+# In .env, add:
+AEGIS_GLOBAL_QPS=5  # Reduce from default 10
 ```
 
 ---
 
-### Q4: 如何在 CI/CD 中使用？
+### Q4: Patch failed to apply
 
-**A**: 参考 GitHub Actions 示例：
+**A**: Don't worry! Aegis has auto-rollback — your code is safe.
+
+**Why it happens**:
+
+- Code context mismatch (file was modified)
+- LLM generated incorrect patch
+
+**Solution**:
+
+```bash
+# Retry automatically
+aegis run --continue
+
+# Or review manually
+aegis patch --review
+```
+
+---
+
+### Q5: How do I use this in CI/CD?
+
+**A**: GitHub Actions example:
 
 ```yaml
 # .github/workflows/aegis-audit.yml
@@ -356,61 +345,58 @@ jobs:
       - name: Install Aegis
         run: pip install aegis-box
 
-      - name: Run Security Audit
-        run: aegis audit --ci-mode --output audit-report.md
+      - name: Run Audit
+        run: aegis audit --ci-mode --output report.md
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+Store your API key in **Settings → Secrets → Actions**.
+
 ---
 
-### Q5: 如何自定义忽略规则？
+### Q6: Can I use local models (Ollama)?
 
-**A**: 编辑 `aegis.yaml`：
+**A**: Yes! For 100% offline operation:
 
-```yaml
-ignore_dirs:
-  - ".git"
-  - "node_modules"
-  - "venv"
-  - "my-custom-dir" # 自定义目录
+```bash
+# In .env
+TIER1_FAST_PROVIDER=ollama
+TIER1_FAST_MODEL=llama3:8b
 
-ignore_extensions:
-  - ".pyc"
-  - ".log"
-  - ".custom" # 自定义扩展名
+TIER2_REASONING_PROVIDER=ollama
+TIER2_REASONING_MODEL=codellama:34b
 
-ignore_patterns:
-  - "*.min.js" # 忽略压缩文件
-  - "*.generated.*" # 忽略生成的文件
+OLLAMA_BASE_URL=http://localhost:11434
 ```
 
----
-
-## 📚 更多资源
-
-- **完整文档**: [README.md](../README.md)
-- **CLI 命令手册**: [docs/COMMANDS.md](COMMANDS.md)
-- **发布检查清单**: [RELEASE.md](../RELEASE.md)
-- **架构文档**: [docs/ARCHITECTURE_REVIEW.md](ARCHITECTURE_REVIEW.md)
-- **GitHub**: https://github.com/nexo/aegis-box
-- **Issues**: https://github.com/nexo/aegis-box/issues
+See [.env.example](.env.example) for full Ollama config.
 
 ---
 
-## 🎉 完成！
+## 📚 More Resources
 
-恭喜！你已经成功运行了 Aegis Box。
-
-**接下来**：
-
-1. ✅ 查看审计报告
-2. ✅ 在 IDE 中验证
-3. ✅ 集成到 CI/CD
-4. ✅ 分享给团队
-
-**有问题？** 欢迎在 GitHub Issues 提问：https://github.com/nexo/aegis-box/issues
+- **Full Documentation**: [README.md](README.md)
+- **CLI Commands**: Run `aegis --help`
+- **Advanced Configuration**: See [.env.example](.env.example)
+- **GitHub**: [github.com/dingwencheng9/aegis-box](https://github.com/dingwencheng9/aegis-box)
+- **Issues**: [github.com/dingwencheng9/aegis-box/issues](https://github.com/dingwencheng9/aegis-box/issues)
 
 ---
 
-**🛡️ Aegis Box - 让 AI 辅助开发更安全、更高效！**
+## 🎉 You're All Set!
+
+Congrats! You've successfully run Aegis Box.
+
+**Next steps**:
+
+1. ✅ Check the audit report (`artifacts/aegis_state.json`)
+2. ✅ Verify in your IDE (`.cursorrules` is auto-loaded)
+3. ✅ Integrate into CI/CD
+4. ✅ Share with your team
+
+**Questions?** Open an issue on [GitHub](https://github.com/dingwencheng9/aegis-box/issues) — we're here to help!
+
+---
+
+**🛡️ Aegis Box - Making AI-assisted development safer, together.**
