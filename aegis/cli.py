@@ -36,9 +36,8 @@ class RateLimitConfig(BaseModel):
     global_qps: int = Field(default=10, description="全局每秒请求数限制")
     provider_limits: Dict[str, int] = Field(
         default={
-            "openai": 50,      # 每分钟请求数
+            "openai": 100,     # OpenAI 和智谱 AI（通过 OpenAI 兼容模式）
             "anthropic": 40,
-            "zhipuai": 100,    # 智谱 AI (LiteLLM 使用 zhipuai)
             "ollama": 1000,    # 本地模型无限制
         },
         description="按提供商的每分钟请求数限制"
@@ -70,9 +69,10 @@ class AegisConfig(BaseModel):
     llm: Dict[str, ModelTierConfig] = Field(
         default={
             "tier1_fast": ModelTierConfig(
-                provider="zhipuai",  # LiteLLM 要求使用 zhipuai 而不是 zhipu
+                provider="openai",  # 智谱 AI 使用 OpenAI 兼容模式
                 model="glm-4-air",
-                api_key_env_var="ZHIPU_API_KEY"
+                api_key_env_var="ZHIPU_API_KEY",
+                endpoint="https://open.bigmodel.cn/api/paas/v4"  # 智谱 AI 端点
             ),
             "tier2_reasoning": ModelTierConfig(
                 provider="anthropic",
