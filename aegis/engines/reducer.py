@@ -310,7 +310,7 @@ class ArchitectureReducer:
                     response_model=FileSummary,
                     system_prompt="你是一个代码审查专家，专注于发现潜在问题和架构缺陷",
                     temperature=0.3,
-                    max_tokens=2000,
+                    max_tokens=4096,  # 增加到 4096 以避免复杂文件被截断
                 )
 
                 logger.success(f"✅ 分析成功: {skeleton.file_path}")
