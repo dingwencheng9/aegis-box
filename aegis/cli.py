@@ -42,8 +42,8 @@ class RateLimitConfig(BaseModel):
         },
         description="按提供商的每分钟请求数限制"
     )
-    token_bucket_capacity: int = Field(default=1000, description="Token 桶容量")
-    token_bucket_refill_rate: int = Field(default=10, description="Token 桶每秒补充速率")
+    token_bucket_capacity: int = Field(default=50000, description="Token 桶容量（初始启动容量）")
+    token_bucket_refill_rate: int = Field(default=100, description="Token 桶每秒补充速率")
 
 class ASTConfig(BaseModel):
     """AST 提取配置"""
