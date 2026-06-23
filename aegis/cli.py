@@ -113,14 +113,21 @@ class AegisConfig(BaseModel):
 # 2. 配置管理器
 # ==========================================
 class ConfigManager:
-    """配置加载与版本迁移管理器"""
+    """配置加载与版本迁移管理器（集成 ConfigLoader）"""
 
     CONFIG_FILE = "aegis.yaml"
     SUPPORTED_VERSIONS = ["1.0"]
 
     @classmethod
     def load(cls, project_root: Path = Path.cwd()) -> AegisConfig:
-        """加载并校验项目根目录的 aegis.yaml"""
+        """
+        加载并校验项目根目录的 aegis.yaml
+
+        新增：支持 .env + aegis.yaml 统一加载
+        优先级：环境变量 > aegis.yaml > 默认值
+        """
+        from aegis.core.config import ConfigLoader
+
         config_path = project_root / cls.CONFIG_FILE
 
         if not config_path.exists():
@@ -128,8 +135,9 @@ class ConfigManager:
             return AegisConfig()
 
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                data = yaml.safe_load(f) or {}
+            # 使用统一配置加载器
+            loader = ConfigLoader(project_root)
+            data = loader.load()
 
             # 版本检查与迁移逻辑
             config_version = data.get("version", "0.0")
@@ -150,12 +158,49 @@ class ConfigManager:
             return AegisConfig()
 
     @classmethod
-    def save(cls, config: AegisConfig, project_root: Path = Path.cwd()):
-        """保存配置到文件"""
+    def save(cls, config: AegisConfig, project_root: Path = Path.cwd(), use_env_refs: bool = True):
+        """
+        保存配置到文件
+
+        Args:
+            config: 配置对象
+            project_root: 项目根目录
+            use_env_refs: 是否在模型配置中使用环境变量引用（推荐）
+        """
         config_path = project_root / cls.CONFIG_FILE
+        config_dict = config.model_dump(mode="json")
+
+        # 如果启用环境变量引用，转换模型配置
+        if use_env_refs and "llm" in config_dict:
+            for tier_name, tier_config in config_dict["llm"].items():
+                if "model" in tier_config:
+                    # 生成环境变量引用格式
+                    provider = tier_config.get("provider", "").upper()
+                    tier_upper = tier_name.replace("_", "").upper()
+
+                    # 使用 provider_MODEL_TIER 格式
+                    if provider:
+                        env_var = f"{provider}_MODEL_{tier_upper.replace('TIER', 'TIER')}"
+                    else:
+                        env_var = f"MODEL_{tier_upper}"
+
+                    # 使用默认值作为 fallback
+                    default_model = tier_config["model"]
+                    tier_config["model"] = f"${{{env_var}:-{default_model}}}"
+
         with open(config_path, "w", encoding="utf-8") as f:
+            # 添加友好的注释头
+            f.write("# 🛡️ Aegis Box Configuration\n")
+            f.write("#\n")
+            f.write("# Model configuration supports environment variable references:\n")
+            f.write("#   ${VAR_NAME:-default_value}\n")
+            f.write("#\n")
+            f.write("# Set your API keys and model overrides in .env file\n")
+            f.write("# See .env.example for all available options\n")
+            f.write("#\n\n")
+
             yaml.dump(
-                config.model_dump(mode="json"),
+                config_dict,
                 f,
                 default_flow_style=False,
                 allow_unicode=True,
@@ -170,18 +215,38 @@ class ConfigManager:
 def init(
     force: bool = typer.Option(False, "--force", "-f", help="强制覆盖已存在的配置文件")
 ):
-    """初始化项目，生成默认的 aegis.yaml 配置文件"""
+    """初始化项目，生成默认的 aegis.yaml 配置文件和 .env 提示"""
     config_path = Path.cwd() / ConfigManager.CONFIG_FILE
+    env_path = Path.cwd() / ".env"
 
     if config_path.exists() and not force:
         console.print(f"[yellow]⚠️ 配置文件 {config_path} 已存在。使用 --force 强制覆盖。[/yellow]")
         return
 
+    # 生成 aegis.yaml（使用环境变量引用）
     default_config = AegisConfig()
-    ConfigManager.save(default_config)
+    ConfigManager.save(default_config, use_env_refs=True)
 
     console.print(f"[green]✅ 成功生成 {ConfigManager.CONFIG_FILE}！[/green]")
-    console.print("[cyan]请根据项目需求修改大模型配置和 API Key 环境变量。[/cyan]")
+
+    # 检查 .env 文件
+    if not env_path.exists():
+        console.print("\n[yellow]⚠️  未找到 .env 文件[/yellow]")
+        console.print("[cyan]请创建 .env 文件并设置你的 API Keys：[/cyan]")
+        console.print("\n  [dim]# 快速创建（如果项目根目录有 .env.example）[/dim]")
+        console.print("  cp .env.example .env")
+        console.print("\n  [dim]# 或手动创建并添加以下内容：[/dim]")
+        console.print("  [green]ANTHROPIC_API_KEY[/green]=your-key-here")
+        console.print("  [green]ZHIPU_API_KEY[/green]=your-key-here")
+        console.print("\n  [dim]# 可选：覆盖模型配置[/dim]")
+        console.print("  [green]ZHIPU_MODEL_TIER1[/green]=glm-4-air")
+        console.print("  [green]ANTHROPIC_MODEL_TIER2[/green]=claude-3-5-haiku-20241022")
+        console.print("  [green]ANTHROPIC_MODEL_TIER3[/green]=claude-3-5-sonnet-20241022")
+    else:
+        console.print(f"\n[green]✅ 已存在 .env 文件: {env_path}[/green]")
+
+    console.print("\n[cyan]💡 提示：模型配置支持环境变量引用，优先级：[/cyan]")
+    console.print("   [dim]环境变量 > aegis.yaml > 默认值[/dim]")
 
 @app.command()
 def config(
