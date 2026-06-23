@@ -13,6 +13,10 @@ from dataclasses import dataclass, asdict
 from loguru import logger
 
 from aegis.cli import AegisConfig
+from aegis.engines.sweeper import AssetSweeper
+from aegis.engines.mapper import CodeMapper
+from aegis.engines.patcher import SmartPatcher
+from aegis.engines.context_injector import ContextInjector
 
 
 # ==========================================
@@ -260,19 +264,22 @@ class AegisOrchestrator:
         """
         logger.info("开始资产清扫...")
 
-        # TODO: 实际实现需要调用 AssetSweeper
-        # from aegis.engines.sweeper import AssetSweeper
-        # sweeper = AssetSweeper(self.repo_path, self.config)
-        # result = await sweeper.sweep(dry_run=not auto_approve)
+        try:
+            sweeper = AssetSweeper(self.repo_path, self.config)
+            result = sweeper.sweep(dry_run=not auto_approve)
 
-        # 模拟实现
-        await asyncio.sleep(1)
-
-        return {
-            "files_scanned": 1000,
-            "files_cleaned": 50,
-            "space_freed_mb": 100
-        }
+            return {
+                "files_scanned": result.get("total_files", 0),
+                "files_cleaned": result.get("cleaned_count", 0),
+                "space_freed_mb": result.get("space_freed_mb", 0)
+            }
+        except Exception as e:
+            logger.error(f"资产清扫失败: {e}")
+            return {
+                "files_scanned": 0,
+                "files_cleaned": 0,
+                "space_freed_mb": 0
+            }
 
     async def _step_reduce(self, auto_approve: bool = False) -> Dict[str, Any]:
         """
@@ -286,20 +293,30 @@ class AegisOrchestrator:
         """
         logger.info("开始架构审计...")
 
-        # TODO: 实际实现需要调用 ArchitectureReducer
-        # from aegis.engines.reducer import ArchitectureReducer
-        # reducer = ArchitectureReducer(self.repo_path, self.config)
-        # report = await reducer.reduce()
+        try:
+            mapper = CodeMapper(self.repo_path, self.config)
+            skeletons = mapper.map_repository()
 
-        # 模拟实现
-        await asyncio.sleep(2)
-
-        return {
-            "vulnerabilities_found": 3,
-            "critical": 1,
-            "high": 2,
-            "medium": 0
-        }
+            # 统计漏洞（这里需要 LLM 审计，暂时返回骨架统计）
+            return {
+                "files_mapped": len(skeletons),
+                "total_lines": sum(s.total_lines for s in skeletons),
+                "compressed_lines": sum(s.compressed_lines for s in skeletons),
+                "compression_ratio": sum(s.compression_ratio for s in skeletons) / len(skeletons) if skeletons else 0,
+                "vulnerabilities_found": 0,  # TODO: 需要 LLM 审计
+                "critical": 0,
+                "high": 0,
+                "medium": 0
+            }
+        except Exception as e:
+            logger.error(f"架构审计失败: {e}")
+            return {
+                "files_mapped": 0,
+                "vulnerabilities_found": 0,
+                "critical": 0,
+                "high": 0,
+                "medium": 0
+            }
 
     async def _step_patch(self, auto_approve: bool = False) -> Dict[str, Any]:
         """
@@ -313,23 +330,14 @@ class AegisOrchestrator:
         """
         logger.info("开始智能修复...")
 
-        # TODO: 实际实现需要调用 SmartPatcher
-        # from aegis.engines.patcher import SmartPatcher
-        # patcher = SmartPatcher(self.repo_path, self.config)
-        #
-        # # 从上一步加载审计报告
-        # reduce_result = self._get_step_result("reduce")
-        # report = reduce_result.artifacts.get("report")
-        #
-        # results = await patcher.heal_vulnerabilities(report)
-
-        # 模拟实现
-        await asyncio.sleep(3)
+        # 暂时跳过（需要 LLM 生成补丁）
+        logger.warning("智能修复功能需要 LLM 审计结果，当前跳过")
 
         return {
-            "vulnerabilities_fixed": 2,
-            "vulnerabilities_failed": 1,
-            "success_rate": 0.67
+            "vulnerabilities_fixed": 0,
+            "vulnerabilities_failed": 0,
+            "success_rate": 0.0,
+            "skipped": True
         }
 
     async def _step_context_sync(self, auto_approve: bool = False) -> Dict[str, Any]:
@@ -344,23 +352,32 @@ class AegisOrchestrator:
         """
         logger.info("开始上下文同步...")
 
-        # TODO: 实际实现需要调用 ContextInjector
-        # from aegis.engines.context_injector import ContextInjector
-        # injector = ContextInjector(self.repo_path)
-        #
-        # # 从审计报告生成上下文
-        # reduce_result = self._get_step_result("reduce")
-        # report = reduce_result.artifacts.get("report")
-        #
-        # result = injector.inject_context(report)
+        try:
+            injector = ContextInjector(self.repo_path)
 
-        # 模拟实现
-        await asyncio.sleep(1)
+            # 从 reduce 步骤获取结果
+            reduce_result = self._get_step_result("reduce")
+            if reduce_result:
+                artifacts = reduce_result.artifacts
+                context_data = {
+                    "files_mapped": artifacts.get("files_mapped", 0),
+                    "compression_ratio": artifacts.get("compression_ratio", 0),
+                }
+            else:
+                context_data = {}
 
-        return {
-            "target_file": ".cursorrules",
-            "injected": True
-        }
+            result = injector.inject_context(context_data)
+
+            return {
+                "target_file": ".cursorrules",
+                "injected": result.get("success", False)
+            }
+        except Exception as e:
+            logger.error(f"上下文同步失败: {e}")
+            return {
+                "target_file": ".cursorrules",
+                "injected": False
+            }
 
     def _create_new_state(self) -> OrchestratorState:
         """
