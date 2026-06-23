@@ -38,7 +38,7 @@ class RateLimitConfig(BaseModel):
         default={
             "openai": 50,      # 每分钟请求数
             "anthropic": 40,
-            "zhipu": 100,
+            "zhipuai": 100,    # 智谱 AI (LiteLLM 使用 zhipuai)
             "ollama": 1000,    # 本地模型无限制
         },
         description="按提供商的每分钟请求数限制"
@@ -70,7 +70,7 @@ class AegisConfig(BaseModel):
     llm: Dict[str, ModelTierConfig] = Field(
         default={
             "tier1_fast": ModelTierConfig(
-                provider="zhipu",
+                provider="zhipuai",  # LiteLLM 要求使用 zhipuai 而不是 zhipu
                 model="glm-4-air",
                 api_key_env_var="ZHIPU_API_KEY"
             ),
