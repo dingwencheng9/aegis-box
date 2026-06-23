@@ -128,7 +128,10 @@ class AegisOrchestrator:
             config: Aegis 配置（默认从文件加载）
         """
         self.repo_path = repo_path or Path.cwd()
-        self.config = config
+        self.config = config or AegisConfig(
+            ignore_dirs=[".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"],
+            ignore_extensions=[".pyc", ".pyo", ".log", ".tmp", ".swp"],
+        )
 
         # 状态文件路径
         self.artifacts_dir = self.repo_path / "artifacts"
@@ -306,13 +309,13 @@ class AegisOrchestrator:
 
             # 统计结果
             total_lines = sum(s.total_lines for s in skeletons)
-            compressed_lines = sum(s.compressed_lines for s in skeletons)
+            skeleton_lines = sum(s.skeleton_lines for s in skeletons)
 
             return {
                 "files_mapped": len(skeletons),
                 "total_lines": total_lines,
-                "compressed_lines": compressed_lines,
-                "compression_ratio": (1 - compressed_lines / total_lines) if total_lines > 0 else 0,
+                "skeleton_lines": skeleton_lines,
+                "compression_ratio": (1 - skeleton_lines / total_lines) if total_lines > 0 else 0,
                 "vulnerabilities_found": 0,  # TODO: 需要 LLM 审计
                 "critical": 0,
                 "high": 0,
@@ -369,10 +372,21 @@ class AegisOrchestrator:
 
             # 从 reduce 步骤获取结果（暂时传入空报告）
             # TODO: 需要 LLM 审计后才有真实报告
-            from aegis.engines.context_injector import ArchitectureReport
+            from aegis.engines.reducer import ArchitectureReport, CouplingMetrics, RefactoringAction
+            from datetime import datetime
+
             empty_report = ArchitectureReport(
-                critical_vulnerabilities=[],
+                architecture_overview="暂未生成架构分析（需要 LLM 审计）",
                 architecture_patterns=[],
+                critical_vulnerabilities=[],
+                coupling_metrics=CouplingMetrics(
+                    high_cohesion_modules=[],
+                    low_coupling_modules=[],
+                    circular_dependencies=[]
+                ),
+                top_refactoring_actions=[],
+                analyzed_files=0,
+                generated_at=datetime.now().isoformat(),
                 dependency_summary={}
             )
 

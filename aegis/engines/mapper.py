@@ -226,9 +226,13 @@ class CodeMapper:
             self.parsers[Language.JAVASCRIPT] = tree_sitter.Parser()
             self.parsers[Language.JAVASCRIPT].language = tree_sitter.Language(tsjavascript.language())
 
-            # TypeScript
-            self.parsers[Language.TYPESCRIPT] = tree_sitter.Parser()
-            self.parsers[Language.TYPESCRIPT].language = tree_sitter.Language(tstypescript.language())
+            # TypeScript - 注意: tree-sitter-typescript 有不同的 API
+            try:
+                from tree_sitter_typescript import language_typescript
+                self.parsers[Language.TYPESCRIPT] = tree_sitter.Parser()
+                self.parsers[Language.TYPESCRIPT].language = tree_sitter.Language(language_typescript())
+            except (ImportError, AttributeError):
+                logger.warning("TypeScript 解析器初始化失败，将跳过 .ts 文件")
 
             logger.success("tree-sitter 解析器初始化成功")
         except Exception as e:
