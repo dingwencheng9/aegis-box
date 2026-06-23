@@ -70,7 +70,7 @@ class AegisConfig(BaseModel):
         default={
             "tier1_fast": ModelTierConfig(
                 provider="openai",  # 智谱 AI 使用 OpenAI 兼容模式
-                model="glm-4-air",
+                model="glm-4.5-air",  # 正确的模型名称
                 api_key_env_var="ZHIPU_API_KEY",
                 endpoint="https://open.bigmodel.cn/api/paas/v4"  # 智谱 AI 端点
             ),
