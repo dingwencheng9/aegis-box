@@ -201,8 +201,16 @@ class LLMClient:
 
         except Exception as e:
             self._record_failure()
-            logger.error(f"LLM API 错误: {self.model_id} - {e}")
-            raise LLMAPIError(f"API 调用失败: {self.model_id} - {str(e)}") from e
+            # Security: 过滤敏感信息
+            error_msg = str(e)
+            # 移除可能包含 API Key 的模式
+            import re
+            error_msg = re.sub(r'(api[_-]?key|authorization|bearer|token)[=:\s]+[^\s,\)]+',
+                             r'\1=***REDACTED***',
+                             error_msg,
+                             flags=re.IGNORECASE)
+            logger.error(f"LLM API 错误: {self.model_id} - {error_msg}")
+            raise LLMAPIError(f"API 调用失败: {self.model_id}") from e
 
     async def _call_with_retry(
         self,
@@ -293,7 +301,22 @@ class LLMClient:
                     backoff.attempt += 1
 
             except Exception as e:
-                logger.warning(f"第 {attempt + 1} 次调用失败: {self.model_id} - {e}")
+                error_str = str(e).lower()
+                # 判断是否为可重试错误
+                is_retryable = any(pattern in error_str for pattern in [
+                    '429', 'rate limit', 'too many requests',
+                    '503', 'service unavailable',
+                    '502', 'bad gateway',
+                    'timeout', 'connection', 'network'
+                ])
+
+                if is_retryable:
+                    logger.warning(f"第 {attempt + 1} 次调用失败（可重试）: {self.model_id} - {e}")
+                else:
+                    logger.error(f"第 {attempt + 1} 次调用失败（不可重试）: {self.model_id} - {e}")
+                    # 不可重试错误直接抛出
+                    raise e
+
                 last_error = e
                 if attempt < self.max_retries - 1:
                     await backoff.wait()

@@ -120,9 +120,17 @@ class GitSandbox:
         else:
             logger.debug("✅ 工作区干净，无需暂存")
 
-        # Step 4: 创建补丁分支
+        # Step 4: 创建补丁分支（防御性验证）
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         self.patch_branch_name = f"aegis-patch-{timestamp}"
+
+        # Security: 验证分支名只包含安全字符
+        import re
+        if not re.match(r'^[a-zA-Z0-9/_-]+$', self.patch_branch_name):
+            logger.error(f"🚨 非法分支名: {self.patch_branch_name}")
+            if self.stashed:
+                self._restore_stash()
+            raise SandboxError(f"Invalid branch name: {self.patch_branch_name}")
 
         try:
             new_branch = self.repo.create_head(self.patch_branch_name)

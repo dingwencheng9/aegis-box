@@ -159,7 +159,23 @@ class SmartPatcher:
         Returns:
             PatchResult: 修复结果
         """
-        file_path = self.repo_path / vuln.file_path
+        # Security: 验证路径不越界
+        try:
+            file_path = (self.repo_path / vuln.file_path).resolve()
+            if not file_path.is_relative_to(self.repo_path.resolve()):
+                logger.error(f"🚨 路径遍历检测: {vuln.file_path}")
+                return PatchResult(
+                    vulnerability=vuln,
+                    success=False,
+                    error_message=f"Security: Path traversal detected"
+                )
+        except (ValueError, OSError) as e:
+            logger.error(f"🚨 路径解析失败: {e}")
+            return PatchResult(
+                vulnerability=vuln,
+                success=False,
+                error_message=f"Invalid path: {e}"
+            )
 
         # Step 1: 检查文件是否存在
         if not file_path.exists():
