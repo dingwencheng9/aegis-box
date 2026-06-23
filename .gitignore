@@ -40,6 +40,11 @@ htmlcov/
 .tox/
 .hypothesis/
 
+# Environment variables (SECURITY: Never commit API keys)
+.env
+.env.local
+.env.*.local
+
 # Aegis specific
 aegis.yaml
 .aegis_context.xml
