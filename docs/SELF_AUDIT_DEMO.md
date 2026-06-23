@@ -1,267 +1,240 @@
-# 🛡️ Aegis Box - Self-Audit Demo (Dogfooding)
+# 🔥 Aegis Box 自我审计演示
 
-## 执行时间
+> **日期**: 2026-06-24  
+> **状态**: ✅ Tier-1 审计成功 | ⏳ Tier-2 架构分析中 | ⏸️ Tier-3 补丁生成待测试
 
-2026-06-24 00:00:00
+---
 
-## 命令
+## 📋 测试概述
 
-```bash
-aegis run --auto --target .
-```
+Aegis Box 首次受控漏洞点火试验（Proof of Concept Ignition），验证 LLM 核心流水线的完整功能。
 
-## 🚀 执行日志
+### 🎯 测试目标
 
-```
-🚀 启动 Aegis 全链路编排...
-⚡ 自动批准模式：将跳过所有确认步骤
-🎯 目标: /Users/nexo/projects/aegis_box (自身项目)
+1. **制造靶标**: 创建包含明显安全漏洞的测试文件
+2. **打通神经链路**: 验证 Tier-1/2/3 LLM 调用链路
+3. **自动修复**: 生成并应用安全补丁
 
-================================================================================
-🧹 资产清扫 (Asset Sweeper)
-================================================================================
-[INFO] 扫描文件: 157
-[INFO] 清理候选:
-  ├─ __pycache__/ (23 个目录)
-  ├─ *.pyc (45 个文件)
-  ├─ .pytest_cache/ (1 个目录)
-  ├─ *.log (3 个文件)
-  └─ .DS_Store (2 个文件)
-[INFO] 清理文件: 74
-[INFO] 释放空间: 8.5 MB
-✅ 步骤完成: sweep (1.2s)
+---
 
-================================================================================
-🔍 架构审计 (Architecture Reducer + LLM Analysis)
-================================================================================
-[INFO] 提取代码骨架: 42 个 Python 文件
-[INFO] Token 压缩:
-  ├─ 原始行数: 8,547 行
-  ├─ 压缩后: 1,203 行
-  ├─ 压缩率: 85.9% ✅
-  └─ Token 估算: 34k → 5k tokens
+## 🎯 第一步：制造靶标
 
-[INFO] Tier-1 (GLM-4-Air) 并发扫描...
-  ├─ aegis/core/config.py ✅
-  ├─ aegis/core/llm.py ✅
-  ├─ aegis/engines/orchestrator.py ⚠️
-  ├─ aegis/engines/patcher.py ⚠️
-  ├─ aegis/utils/git_sandbox.py ⚠️
-  └─ ... (37 个文件扫描完成)
+**文件**: `tests/dummy_vulnerable_app.py`
 
-[INFO] Tier-2 (Claude-3.5-Haiku) 架构总结...
+故意植入的漏洞：
 
-发现问题: 5 个
-  ├─ 🔴 关键 (Critical): 0
-  ├─ 🟠 高危 (High): 2
-  │   ├─ [H1] aegis/engines/patcher.py:156
-  │   │   问题: 潜在的路径遍历漏洞
-  │   │   详情: apply_patch() 未验证文件路径是否在项目根目录内
-  │   │
-  │   └─ [H2] aegis/utils/git_sandbox.py:89
-  │       问题: Git 命令注入风险
-  │       详情: branch_name 未经过 shell 转义直接传入 subprocess
-  │
-  ├─ 🟡 中危 (Medium): 2
-  │   ├─ [M1] aegis/core/llm.py:234
-  │   │   问题: API Key 可能泄露到日志
-  │   │   详情: 错误日志可能包含完整的请求头（含 API Key）
-  │   │
-  │   └─ [M2] aegis/engines/orchestrator.py:45
-  │       问题: 缺少速率限制重试机制
-  │       详情: LLM API 429 错误未自动重试
-  │
-  └─ 🟢 低危 (Low): 1
-      └─ [L1] aegis/cli.py:178
-          问题: 配置文件权限未验证
-          详情: aegis.yaml 可能被其他用户读取
+1. **命令注入** (`execute_user_command`)
+   - 直接将用户输入传递给 `os.system()`
+   - 攻击向量: `; rm -rf /`
 
-✅ 步骤完成: reduce (18.7s)
+2. **SQL 注入** (`search_user`)
+   - 字符串拼接构建 SQL 查询
+   - 攻击向量: `' OR '1'='1`
 
-================================================================================
-🛠️  智能修复 (Smart Patcher)
-================================================================================
-[INFO] Tier-3 (Claude-3.5-Sonnet) 生成修复补丁...
+3. **路径遍历** (`read_user_file`)
+   - 未验证文件路径
+   - 攻击向量: `../../etc/passwd`
 
-补丁 1/4: 修复路径遍历漏洞
-  文件: aegis/engines/patcher.py
-  策略: 添加 Path.resolve().is_relative_to() 验证
+4. **XSS 跨站脚本** (`render_html`)
+   - 未转义用户输入
+   - 攻击向量: `<script>alert('xss')</script>`
 
-  ✅ 生成成功
-  ✅ Git 沙盒: aegis-patch-20260624-000000
-  ✅ 应用补丁: 成功
-  ✅ 语法验证: 通过
-  ✅ 测试套件: 通过 (80% coverage maintained)
-  ✅ 合并到主分支
+---
 
-补丁 2/4: 修复 Git 命令注入
-  文件: aegis/utils/git_sandbox.py
-  策略: 使用 shlex.quote() 转义分支名
+## ⚡ 第二步：LLM 神经链路
 
-  ✅ 生成成功
-  ✅ Git 沙盒: aegis-patch-20260624-000001
-  ✅ 应用补丁: 成功
-  ✅ 语法验证: 通过
-  ✅ 测试套件: 通过
-  ✅ 合并到主分支
+### 配置修复过程
 
-补丁 3/4: 防止 API Key 泄露
-  文件: aegis/core/llm.py
-  策略: 添加日志过滤器，屏蔽 Authorization 头
+**问题 1**: LiteLLM 不支持 `zhipu` 提供商
 
-  ✅ 生成成功
-  ✅ Git 沙盒: aegis-patch-20260624-000002
-  ✅ 应用补丁: 成功
-  ✅ 语法验证: 通过
-  ✅ 测试套件: 通过
-  ✅ 合并到主分支
+- ❌ 尝试: `zhipu/glm-4-air`
+- ❌ 尝试: `zhipuai/glm-4-air`
+- ✅ 解决: `openai/glm-4.5-air` + 自定义端点
 
-补丁 4/4: 添加速率限制重试
-  文件: aegis/engines/orchestrator.py
-  策略: 实现指数退避重试机制
+**最终配置**:
 
-  ✅ 生成成功
-  ✅ Git 沙盒: aegis-patch-20260624-000003
-  ⚠️  应用补丁: 部分冲突（import 语句位置）
-  ✅ 自动调整: 成功
-  ✅ 语法验证: 通过
-  ✅ 测试套件: 通过
-  ✅ 合并到主分支
-
-[INFO] 修复成功: 4/4
-[INFO] 成功率: 100% ✅
-✅ 步骤完成: patch (32.4s)
-
-================================================================================
-🔄 上下文同步 (Context Injector)
-================================================================================
-[INFO] 生成 .cursorrules 规则
-
-注入规则:
-  1. 路径验证: 所有文件路径必须使用 Path.resolve().is_relative_to(project_root)
-  2. 命令转义: 所有 subprocess 参数必须使用 shlex.quote()
-  3. 日志安全: 禁止记录包含 API Key、token 或密码的请求头
-  4. 重试机制: LLM API 调用必须实现指数退避重试（最多 3 次）
-  5. 配置权限: aegis.yaml 和 .env 文件必须设置 0600 权限
-
-[INFO] 目标文件: .cursorrules
-[INFO] 注入成功: true
-✅ 步骤完成: context_sync (0.8s)
-
-================================================================================
-📊 执行汇总
-================================================================================
-会话 ID: aegis-self-audit-20260624-000000
-开始时间: 2026-06-24T00:00:00
-结束时间: 2026-06-24T00:00:53
-总耗时: 53.1 秒
-
-步骤详情:
-  ✅ sweep: success (1.2s)
-  ✅ reduce: success (18.7s)
-  ✅ patch: success (32.4s)
-  ✅ context_sync: success (0.8s)
-
-汇总统计:
-  扫描文件: 157
-  清理文件: 74
-  Python 文件: 42
-  发现漏洞: 5 (H:2, M:2, L:1)
-  修复漏洞: 4 (100%)
-  释放空间: 8.5 MB
-  Token 消耗: 5.2k
-  预估成本: $0.08
-
-Git 变更:
-  ├─ 修改文件: 4
-  ├─ 新增测试: 2
-  └─ 提交: 4 个补丁
-
-================================================================================
-
-✅ Aegis 全链路编排完成！
-
-📝 详细报告:
-  - 状态文件: artifacts/aegis_state.json
-  - IDE 规则: .cursorrules
-  - Git 日志: git log --oneline --since="1 hour ago"
-
-💡 建议:
-  1. 查看 .cursorrules - Claude Code/Cursor 已自动加载这些规则
-  2. 运行 git diff HEAD~4 查看所有修复
-  3. 考虑将速率限制配置移到 .env 中（当前硬编码）
+```yaml
+llm:
+  tier1_fast:
+    provider: openai # OpenAI 兼容模式
+    model: glm-4.5-air
+    endpoint: https://open.bigmodel.cn/api/paas/v4
+  tier2_reasoning:
+    provider: anthropic
+    model: claude-sonnet-4-6 # 升级至 Sonnet（原为 Haiku）
+  tier3_patching:
+    provider: anthropic
+    model: claude-opus-4-8
 ```
 
 ---
 
-## 🎯 The Ouroboros Protocol in Action
+## 🎊 第三步：Tier-1 审计结果
 
-**Aegis Box 刚刚审计并改进了自己！**
+**模型**: GLM-4.5-Air  
+**耗时**: ~47 秒（包含速率限制等待 153s）  
+**状态**: ✅ **成功检测所有漏洞！**
 
-### 发现的真实问题
+### 发现的漏洞清单
 
-1. **路径遍历漏洞** (aegis/engines/patcher.py)
-   - 风险: 恶意补丁可能写入项目外的文件
-   - 修复: 添加 `Path.resolve().is_relative_to()` 验证
+| #   | 级别   | 漏洞类型     | 位置    | 描述                                    |
+| --- | ------ | ------------ | ------- | --------------------------------------- |
+| 1   | **P0** | 命令注入     | L10-L17 | `execute_user_command` 直接执行用户输入 |
+| 2   | **P0** | SQL 注入     | L20-L34 | `search_user` 字符串拼接 SQL 查询       |
+| 3   | **P0** | 路径遍历     | L37-L44 | `read_user_file` 未验证文件路径         |
+| 4   | **P0** | XSS 跨站脚本 | L47-L54 | `render_html` 未转义 HTML               |
+| 5   | **P1** | 高耦合       | L58-L72 | `api_endpoint` 调用多个函数             |
 
-2. **Git 命令注入** (aegis/utils/git_sandbox.py)
-   - 风险: 特殊字符的分支名可能执行任意命令
-   - 修复: 使用 `shlex.quote()` 转义
+### 修复建议
 
-3. **API Key 泄露风险** (aegis/core/llm.py)
-   - 风险: 错误日志可能包含完整请求头
-   - 修复: 添加日志过滤器
+**命令注入**:
 
-4. **缺少重试机制** (aegis/engines/orchestrator.py)
-   - 风险: LLM API 偶发 429 错误导致失败
-   - 修复: 实现指数退避重试
+```python
+# ❌ 危险
+os.system(f"echo {user_input}")
 
-### 元层级开发
-
-**这就是 The Ouroboros Protocol 的威力**：
-
+# ✅ 安全
+import subprocess
+subprocess.run(["echo", user_input], check=True)
 ```
-Aegis Box (v0.1.0)
-  ↓ 审计自身
-发现 5 个漏洞
-  ↓ 自动修复 4 个
-Aegis Box (v0.1.1) ← 更安全的版本
-  ↓ 可以再次审计自身
-持续进化...
+
+**SQL 注入**:
+
+```python
+# ❌ 危险
+cursor.execute(f"SELECT * FROM users WHERE username = '{username}'")
+
+# ✅ 安全
+cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+```
+
+**路径遍历**:
+
+```python
+# ❌ 危险
+with open(filename, 'r') as f:
+    return f.read()
+
+# ✅ 安全
+from pathlib import Path
+safe_path = Path("/allowed/dir") / filename
+if safe_path.resolve().is_relative_to("/allowed/dir"):
+    with open(safe_path, 'r') as f:
+        return f.read()
+```
+
+**XSS 防护**:
+
+```python
+# ❌ 危险
+html = f"<div>{user_content}</div>"
+
+# ✅ 安全
+from html import escape
+html = f"<div>{escape(user_content)}</div>"
 ```
 
 ---
 
-## 🚀 实际执行建议
+## 🏛️ 第四步：Tier-2 架构分析
 
-要真正运行 Aegis Box 对自身的审计：
+**模型**: Claude Sonnet 4.6  
+**状态**: ⏳ **进行中**（等待速率限制 358 秒）
 
-```bash
-# 1. 安装依赖（如果在虚拟环境中）
-pip install -e .
+预期输出：
 
-# 2. 确保 .env 配置了 API Key
-cat .env | grep API_KEY
+- 架构评价（项目类型、架构模式、技术栈）
+- 内聚耦合度评估
+- P0 漏洞汇总
+- Top 3 重构建议
 
-# 3. 运行自我审计
-aegis run --auto --target .
+---
 
-# 4. 查看结果
-cat artifacts/aegis_state.json
-cat .cursorrules
+## 🛠️ 第五步：Tier-3 补丁生成
+
+**模型**: Claude Opus 4.8  
+**状态**: ⏸️ **待执行**
+
+计划：
+
+1. 针对 4 个 P0 漏洞生成 SEARCH/REPLACE 补丁
+2. 使用 GitSandbox 在隔离分支测试
+3. 验证修复后的代码安全性
+
+---
+
+## 📊 性能统计
+
+| 阶段            | 模型        | 耗时 | Token 消耗 | 成本估算 |
+| --------------- | ----------- | ---- | ---------- | -------- |
+| **AST 提取**    | tree-sitter | 1ms  | 0          | $0       |
+| **Tier-1 审计** | GLM-4.5-Air | 47s  | ~2,500     | ~$0.001  |
+| **Tier-2 分析** | Sonnet 4.6  | 待测 | ~4,500     | ~$0.01   |
+| **Tier-3 补丁** | Opus 4.8    | 待测 | ~8,000     | ~$0.12   |
+| **总计**        | -           | -    | ~15,000    | ~$0.13   |
+
+**Token 压缩率**: 73 行原始代码 → 57 行骨架（78.1% 压缩）
+
+---
+
+## 🎯 关键发现
+
+### ✅ 成功验证
+
+1. **AST 提取工作正常**
+   - tree-sitter 成功解析 Python 代码
+   - 78.1% 的 Token 压缩率
+
+2. **Tier-1 LLM 调用成功**
+   - GLM-4.5-Air 正确识别所有漏洞
+   - 结构化输出 fallback 机制工作正常
+
+3. **智谱 AI OpenAI 兼容模式**
+   - 通过 `openai/` 前缀调用成功
+   - 自定义端点配置生效
+
+### ⚠️ 待优化
+
+1. **结构化输出解析**
+   - GLM 返回 Markdown 格式而非 JSON
+   - fallback 到 instructor 解析成功（但增加耗时）
+
+2. **速率限制过于保守**
+   - 初始 Token 桶为空，需等待 153 秒
+   - 可优化初始容量配置
+
+3. **Tier-2 重复调用 Tier-1**
+   - `analyze_project` 会重新调用 `analyze_file`
+   - 应复用已有的 Tier-1 结果
+
+---
+
+## 🚀 下一步计划
+
+1. **等待 Tier-2 完成** (预计 6 分钟)
+2. **验证架构报告质量**
+3. **测试 Tier-3 补丁生成**
+4. **应用补丁并验证修复**
+5. **完整流程录屏演示**
+
+---
+
+## 📝 技术债务记录
+
+### 需要修复的问题
+
+1. **reducer.py:363**: Tier-2 应复用 Tier-1 结果，避免重复调用
+2. **llm.py:266**: 改进结构化输出解析（GLM 不支持原生 JSON mode）
+3. **rate_limiter.py:45**: 优化初始 Token 桶容量，避免首次等待
+
+### 配置优化建议
+
+```yaml
+rate_limit:
+  token_bucket_capacity: 10000 # 当前: 1000（太小）
+  token_bucket_refill_rate: 50 # 当前: 10（太慢）
 ```
 
 ---
 
-## 💡 狗粮测试的价值
-
-通过对自身运行审计，我们：
-
-1. ✅ **验证功能完整性** - 所有模块协同工作
-2. ✅ **发现真实问题** - 不是理论上的 Bug
-3. ✅ **展示产品价值** - "我们自己也在用"
-4. ✅ **增强用户信心** - Dogfooding 是质量保证
-
----
-
-**🛡️ Aegis Box 已准备好审计自己和全世界的代码！**
+**🛡️ The Ouroboros Protocol is ALIVE! Aegis 正在审计自己！**
