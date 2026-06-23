@@ -265,7 +265,12 @@ class AegisOrchestrator:
         logger.info("开始资产清扫...")
 
         try:
-            sweeper = AssetSweeper(self.repo_path, self.config)
+            # 从配置提取参数
+            sweeper = AssetSweeper(
+                ignore_dirs=self.config.ignore_dirs,
+                ignore_extensions=self.config.ignore_extensions,
+                max_workers=4
+            )
             result = sweeper.sweep(dry_run=not auto_approve)
 
             return {
@@ -275,6 +280,8 @@ class AegisOrchestrator:
             }
         except Exception as e:
             logger.error(f"资产清扫失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {
                 "files_scanned": 0,
                 "files_cleaned": 0,
@@ -294,15 +301,18 @@ class AegisOrchestrator:
         logger.info("开始架构审计...")
 
         try:
-            mapper = CodeMapper(self.repo_path, self.config)
-            skeletons = mapper.map_repository()
+            mapper = CodeMapper()
+            skeletons = mapper.map_repository(self.repo_path)
 
-            # 统计漏洞（这里需要 LLM 审计，暂时返回骨架统计）
+            # 统计结果
+            total_lines = sum(s.total_lines for s in skeletons)
+            compressed_lines = sum(s.compressed_lines for s in skeletons)
+
             return {
                 "files_mapped": len(skeletons),
-                "total_lines": sum(s.total_lines for s in skeletons),
-                "compressed_lines": sum(s.compressed_lines for s in skeletons),
-                "compression_ratio": sum(s.compression_ratio for s in skeletons) / len(skeletons) if skeletons else 0,
+                "total_lines": total_lines,
+                "compressed_lines": compressed_lines,
+                "compression_ratio": (1 - compressed_lines / total_lines) if total_lines > 0 else 0,
                 "vulnerabilities_found": 0,  # TODO: 需要 LLM 审计
                 "critical": 0,
                 "high": 0,
@@ -310,6 +320,8 @@ class AegisOrchestrator:
             }
         except Exception as e:
             logger.error(f"架构审计失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {
                 "files_mapped": 0,
                 "vulnerabilities_found": 0,
@@ -355,25 +367,25 @@ class AegisOrchestrator:
         try:
             injector = ContextInjector(self.repo_path)
 
-            # 从 reduce 步骤获取结果
-            reduce_result = self._get_step_result("reduce")
-            if reduce_result:
-                artifacts = reduce_result.artifacts
-                context_data = {
-                    "files_mapped": artifacts.get("files_mapped", 0),
-                    "compression_ratio": artifacts.get("compression_ratio", 0),
-                }
-            else:
-                context_data = {}
+            # 从 reduce 步骤获取结果（暂时传入空报告）
+            # TODO: 需要 LLM 审计后才有真实报告
+            from aegis.engines.context_injector import ArchitectureReport
+            empty_report = ArchitectureReport(
+                critical_vulnerabilities=[],
+                architecture_patterns=[],
+                dependency_summary={}
+            )
 
-            result = injector.inject_context(context_data)
+            result = injector.inject_context(empty_report)
 
             return {
                 "target_file": ".cursorrules",
-                "injected": result.get("success", False)
+                "injected": result.success
             }
         except Exception as e:
             logger.error(f"上下文同步失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {
                 "target_file": ".cursorrules",
                 "injected": False

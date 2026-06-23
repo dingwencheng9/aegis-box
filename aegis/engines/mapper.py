@@ -187,24 +187,54 @@ class CodeMapper:
         if TREE_SITTER_AVAILABLE:
             self._init_parsers()
 
+    def map_repository(self, repo_path: Path, extensions: List[str] = None) -> List[CodeSkeleton]:
+        """
+        扫描仓库并提取所有代码骨架
+
+        Args:
+            repo_path: 仓库根目录
+            extensions: 要扫描的文件扩展名（如 ['.py', '.js']）
+
+        Returns:
+            CodeSkeleton 列表
+        """
+        if extensions is None:
+            extensions = ['.py', '.js', '.ts', '.jsx', '.tsx']
+
+        skeletons = []
+        for ext in extensions:
+            for file_path in repo_path.rglob(f'*{ext}'):
+                # 跳过隐藏文件和常见忽略目录
+                if any(part.startswith('.') or part in ['node_modules', '__pycache__', 'venv', 'dist', 'build']
+                       for part in file_path.parts):
+                    continue
+
+                skeleton = self.extract_skeleton(file_path)
+                if skeleton:
+                    skeletons.append(skeleton)
+
+        return skeletons
+
     def _init_parsers(self):
         """初始化 tree-sitter 解析器"""
         try:
             # Python
             self.parsers[Language.PYTHON] = tree_sitter.Parser()
-            self.parsers[Language.PYTHON].set_language(tree_sitter.Language(tspython.language(), "python"))
+            self.parsers[Language.PYTHON].language = tree_sitter.Language(tspython.language())
 
             # JavaScript
             self.parsers[Language.JAVASCRIPT] = tree_sitter.Parser()
-            self.parsers[Language.JAVASCRIPT].set_language(tree_sitter.Language(tsjavascript.language(), "javascript"))
+            self.parsers[Language.JAVASCRIPT].language = tree_sitter.Language(tsjavascript.language())
 
             # TypeScript
             self.parsers[Language.TYPESCRIPT] = tree_sitter.Parser()
-            self.parsers[Language.TYPESCRIPT].set_language(tree_sitter.Language(tstypescript.language(), "typescript"))
+            self.parsers[Language.TYPESCRIPT].language = tree_sitter.Language(tstypescript.language())
 
             logger.success("tree-sitter 解析器初始化成功")
         except Exception as e:
             logger.error(f"tree-sitter 初始化失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     def detect_language(self, file_path: Path) -> Language:
         """根据文件扩展名检测语言"""
