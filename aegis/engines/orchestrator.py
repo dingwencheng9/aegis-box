@@ -274,12 +274,22 @@ class AegisOrchestrator:
                 ignore_extensions=self.config.ignore_extensions,
                 max_workers=4
             )
-            result = sweeper.sweep(dry_run=not auto_approve)
+            # 先扫描
+            scan_result = sweeper.scan_directory(self.repo_path)
+
+            # 如果 auto_approve，执行清理
+            if auto_approve and scan_result.ignorable_files:
+                sweeper.clean(
+                    root_path=self.repo_path,
+                    files_to_delete=scan_result.ignorable_files,
+                    dirs_to_delete=scan_result.ignorable_dirs,
+                    dry_run=False
+                )
 
             return {
-                "files_scanned": result.get("total_files", 0),
-                "files_cleaned": result.get("cleaned_count", 0),
-                "space_freed_mb": result.get("space_freed_mb", 0)
+                "files_scanned": scan_result.total_files,
+                "files_cleaned": len(scan_result.ignorable_files) if auto_approve else 0,
+                "space_freed_mb": scan_result.ignorable_size_mb if auto_approve else 0
             }
         except Exception as e:
             logger.error(f"资产清扫失败: {e}")
@@ -380,6 +390,9 @@ class AegisOrchestrator:
                 architecture_patterns=[],
                 critical_vulnerabilities=[],
                 coupling_metrics=CouplingMetrics(
+                    cohesion_score=0,
+                    coupling_score=0,
+                    evaluation="暂未评估",
                     high_cohesion_modules=[],
                     low_coupling_modules=[],
                     circular_dependencies=[]
