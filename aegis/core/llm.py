@@ -80,8 +80,8 @@ class LLMClient:
         config: ModelTierConfig,
         rate_limiter: RateLimiter,
         max_retries: int = 3,
-        timeout: float = 60.0,
-        circuit_breaker_threshold: int = 3,
+        timeout: float = 120.0,  # 增加到 120 秒以应对 fallback 解析
+        circuit_breaker_threshold: int = 5,  # 提高熔断阈值
         circuit_breaker_timeout: float = 60.0,
     ):
         """
