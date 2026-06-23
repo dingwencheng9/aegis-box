@@ -593,7 +593,7 @@ class LLMClientFactory:
             config=self.config.llm["tier1_fast"],
             rate_limiter=self.rate_limiter,
             max_retries=2,
-            timeout=30.0,
+            timeout=120.0,  # 增加到 120 秒以应对 fallback 解析
             circuit_breaker_threshold=5,  # Tier-1 允许更多失败
         )
 
@@ -613,7 +613,7 @@ class LLMClientFactory:
             config=self.config.llm["tier2_reasoning"],
             rate_limiter=self.rate_limiter,
             max_retries=3,
-            timeout=60.0,
+            timeout=180.0,  # Tier-2 架构分析需要更长时间
             circuit_breaker_threshold=3,
         )
 
