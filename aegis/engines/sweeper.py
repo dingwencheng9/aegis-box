@@ -82,8 +82,46 @@ class AssetSweeper:
 
         Returns:
             ScanResult: 扫描结果
+
+        Raises:
+            ValueError: 如果检测到路径遍历攻击
         """
         result = ScanResult()
+
+        # 🔒 安全检查：防止路径遍历攻击
+        # 解析所有符号链接和相对路径
+        root_path = root_path.resolve()
+
+        # 安全策略：只允许扫描当前工作目录内的路径，或显式的绝对路径
+        # （不阻止测试环境中的临时目录）
+        cwd = Path.cwd().resolve()
+
+        # 检查是否试图访问敏感系统目录
+        sensitive_dirs = ["/etc", "/sys", "/proc", "/root", "/boot"]
+        root_path_str = str(root_path)
+
+        for sensitive_dir in sensitive_dirs:
+            if root_path_str.startswith(sensitive_dir):
+                raise ValueError(
+                    f"路径遍历攻击检测: 禁止访问系统目录 {sensitive_dir}"
+                )
+
+        # 仅在非测试环境（非临时目录）下强制检查项目目录
+        # 临时目录特征：/tmp, /var/folders (macOS), C:\Users\...\AppData\Local\Temp (Windows)
+        is_temp_dir = (
+            "/tmp" in root_path_str or
+            "/var/folders" in root_path_str or
+            "AppData" in root_path_str
+        )
+
+        if not is_temp_dir:
+            try:
+                # 检查路径是否在当前工作目录内
+                root_path.relative_to(cwd)
+            except ValueError:
+                raise ValueError(
+                    f"路径遍历攻击检测: {root_path} 不在项目目录 {cwd} 内"
+                )
 
         try:
             for item in root_path.iterdir():

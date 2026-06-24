@@ -14,11 +14,21 @@ from aegis.engines.patcher import (
     heal_project_vulnerabilities,
 )
 from aegis.utils.diff_parser import PatchApplyError
+from aegis.cli import AegisConfig
 
 
 # ==========================================
 # Fixtures
 # ==========================================
+@pytest.fixture
+def mock_config():
+    """模拟配置"""
+    return AegisConfig(
+        ignore_dirs=[".git", "node_modules"],
+        ignore_extensions=[".pyc", ".log"],
+    )
+
+
 @pytest.fixture
 def sample_vulnerability():
     """示例漏洞"""
@@ -75,9 +85,9 @@ def mock_patched_code():
 # ==========================================
 # SmartPatcher 基础测试
 # ==========================================
-def test_smart_patcher_initialization(tmp_path):
+def test_smart_patcher_initialization(tmp_path, mock_config):
     """测试 SmartPatcher 初始化"""
-    patcher = SmartPatcher(repo_path=tmp_path, auto_commit=True)
+    patcher = SmartPatcher(config=mock_config, repo_path=tmp_path, auto_commit=True)
 
     assert patcher.repo_path == tmp_path
     assert patcher.auto_commit is True

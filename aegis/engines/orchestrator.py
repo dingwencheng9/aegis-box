@@ -141,6 +141,9 @@ class AegisOrchestrator:
         # 当前状态
         self.state: Optional[OrchestratorState] = None
 
+        # 架构报告（用于步骤间传递）
+        self._architecture_report = None
+
     async def run(
         self,
         auto_approve: bool = False,
@@ -314,21 +317,37 @@ class AegisOrchestrator:
         logger.info("开始架构审计...")
 
         try:
+            # Step 1: 提取代码骨架
             mapper = CodeMapper()
             skeletons = mapper.map_repository(self.repo_path)
 
-            # 统计结果
+            # 统计压缩率
             total_lines = sum(s.total_lines for s in skeletons)
             skeleton_lines = sum(s.skeleton_lines for s in skeletons)
+            compression_ratio = (1 - skeleton_lines / total_lines) if total_lines > 0 else 0
+
+            # 🔥 Step 2: 调用双轨架构分析器（Tier-1 + Tier-2）
+            from aegis.engines.reducer import ArchitectureReducer
+
+            reducer = ArchitectureReducer(
+                config=self.config,
+                max_concurrent=10  # 并发控制
+            )
+
+            # 异步分析项目
+            report = await reducer.analyze_project(skeletons)
+
+            # 保存报告供后续步骤使用
+            self._architecture_report = report
 
             return {
                 "files_mapped": len(skeletons),
                 "total_lines": total_lines,
                 "skeleton_lines": skeleton_lines,
-                "compression_ratio": (1 - skeleton_lines / total_lines) if total_lines > 0 else 0,
-                "vulnerabilities_found": 0,  # TODO: 需要 LLM 审计
-                "critical": 0,
-                "high": 0,
+                "compression_ratio": compression_ratio,
+                "vulnerabilities_found": len(report.critical_vulnerabilities),
+                "critical": len(report.critical_vulnerabilities),
+                "high": 0,  # 暂时只统计 P0
                 "medium": 0
             }
         except Exception as e:
@@ -337,6 +356,9 @@ class AegisOrchestrator:
             logger.error(traceback.format_exc())
             return {
                 "files_mapped": 0,
+                "total_lines": 0,
+                "skeleton_lines": 0,
+                "compression_ratio": 0,
                 "vulnerabilities_found": 0,
                 "critical": 0,
                 "high": 0,
@@ -355,15 +377,60 @@ class AegisOrchestrator:
         """
         logger.info("开始智能修复...")
 
-        # 暂时跳过（需要 LLM 生成补丁）
-        logger.warning("智能修复功能需要 LLM 审计结果，当前跳过")
+        # 检查是否有架构报告（来自 reduce 步骤）
+        if not hasattr(self, '_architecture_report') or self._architecture_report is None:
+            logger.warning("智能修复功能需要 LLM 审计结果，当前跳过")
+            return {
+                "vulnerabilities_fixed": 0,
+                "vulnerabilities_failed": 0,
+                "success_rate": 0.0,
+                "skipped": True
+            }
 
-        return {
-            "vulnerabilities_fixed": 0,
-            "vulnerabilities_failed": 0,
-            "success_rate": 0.0,
-            "skipped": True
-        }
+        report = self._architecture_report
+
+        # 如果没有关键漏洞，直接跳过
+        if not report.critical_vulnerabilities:
+            logger.info("✅ 未发现关键漏洞，跳过修复步骤")
+            return {
+                "vulnerabilities_fixed": 0,
+                "vulnerabilities_failed": 0,
+                "success_rate": 1.0,
+                "skipped": True
+            }
+
+        # 🔥 调用智能补丁引擎（Tier-3）
+        try:
+            patcher = SmartPatcher(
+                config=self.config,
+                repo_path=self.repo_path,
+                auto_commit=auto_approve
+            )
+
+            results = await patcher.heal_vulnerabilities(report)
+
+            # 统计结果
+            fixed = sum(1 for r in results if r.success)
+            failed = len(results) - fixed
+            success_rate = fixed / len(results) if results else 0
+
+            return {
+                "vulnerabilities_fixed": fixed,
+                "vulnerabilities_failed": failed,
+                "success_rate": success_rate,
+                "skipped": False
+            }
+
+        except Exception as e:
+            logger.error(f"智能修复失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "vulnerabilities_fixed": 0,
+                "vulnerabilities_failed": len(report.critical_vulnerabilities),
+                "success_rate": 0.0,
+                "skipped": False
+            }
 
     async def _step_context_sync(self, auto_approve: bool = False) -> Dict[str, Any]:
         """

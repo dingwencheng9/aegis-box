@@ -23,8 +23,8 @@ from aegis.cli import ModelTierConfig, AegisConfig
 # ==========================================
 # 测试用 Pydantic 模型
 # ==========================================
-class TestSummary(BaseModel):
-    """测试用的结构化输出模型"""
+class SummaryModel(BaseModel):
+    """测试用的结构化输出模型（重命名避免 pytest 误判）"""
     title: str
     points: List[str]
     score: int
@@ -252,11 +252,11 @@ async def test_chat_structured_output_fallback(llm_client, monkeypatch):
     # 调用
     response = await llm_client.chat(
         "Summarize this",
-        response_model=TestSummary
+        response_model=SummaryModel
     )
 
     # 验证
-    assert isinstance(response, TestSummary)
+    assert isinstance(response, SummaryModel)
     assert response.title == "Test Summary"
     assert len(response.points) == 2
     assert response.score == 85

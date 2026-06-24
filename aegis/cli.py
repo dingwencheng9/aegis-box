@@ -30,6 +30,11 @@ class ModelTierConfig(BaseModel):
     model: str = Field(..., description="模型名称")
     api_key_env_var: Optional[str] = Field(None, description="读取 API Key 的环境变量名")
     endpoint: Optional[str] = Field(None, description="自定义推理端点 (用于私有化部署)")
+    max_concurrent: int = Field(default=10, description="最大并发请求数")
+    temperature: float = Field(default=0.3, description="温度参数")
+    max_tokens: int = Field(default=4096, description="最大 token 数")
+    timeout: float = Field(default=120.0, description="超时时间（秒）")
+    max_retries: int = Field(default=3, description="最大重试次数")
 
 class RateLimitConfig(BaseModel):
     """速率限制配置"""

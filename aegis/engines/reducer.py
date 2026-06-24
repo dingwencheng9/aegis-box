@@ -305,7 +305,10 @@ class ArchitectureReducer:
         Returns:
             FileSummary: 文件摘要（失败时返回 FAILED 状态）
         """
-        async with self.semaphore:  # 并发背压控制
+        # 🔥 Phase 4: 动态获取信号量（每次都从控制器获取最新的）
+        semaphore = self.concurrency_controller.get_semaphore()
+
+        async with semaphore:  # 并发背压控制
             # 🆕 文件级重试装甲（3 次重试 + 指数退避）
             max_file_retries = 3
             base_delay = 2.0  # 初始等待 2 秒

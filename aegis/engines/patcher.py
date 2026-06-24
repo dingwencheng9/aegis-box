@@ -12,6 +12,7 @@ from loguru import logger
 from aegis.utils.diff_parser import parse_and_apply_patches, PatchApplyError
 from aegis.utils.git_sandbox import create_sandbox
 from aegis.core.llm import LLMClientFactory
+from aegis.cli import AegisConfig
 
 
 # ==========================================
@@ -67,6 +68,7 @@ class SmartPatcher:
 
     def __init__(
         self,
+        config: AegisConfig,
         repo_path: Optional[Path] = None,
         auto_commit: bool = True
     ):
@@ -74,17 +76,26 @@ class SmartPatcher:
         初始化智能补丁引擎
 
         Args:
+            config: Aegis 全局配置
             repo_path: Git 仓库路径（默认当前目录）
             auto_commit: 是否自动提交成功的补丁
         """
+        self.config = config
         self.repo_path = repo_path or Path.cwd()
         self.auto_commit = auto_commit
 
-        # 初始化 LLM 客户端
-        self.llm_factory = LLMClientFactory()
-        self.tier3_client = None  # 延迟初始化
+        # 初始化 LLM 客户端工厂
+        self.llm_factory = LLMClientFactory(config)
+        self._tier3_client = None  # 延迟初始化
 
-    def heal_vulnerabilities(
+    @property
+    def tier3_client(self):
+        """延迟初始化 Tier-3 客户端"""
+        if self._tier3_client is None:
+            self._tier3_client = self.llm_factory.create_tier3_client()
+        return self._tier3_client
+
+    async def heal_vulnerabilities(
         self,
         report: ArchitectureReport
     ) -> List[PatchResult]:
@@ -116,7 +127,7 @@ class SmartPatcher:
                 f"{'='*80}"
             )
 
-            result = self._fix_single_vulnerability(vuln)
+            result = await self._fix_single_vulnerability(vuln)
             results.append(result)
 
             if result.success:
@@ -138,7 +149,7 @@ class SmartPatcher:
 
         return results
 
-    def _fix_single_vulnerability(
+    async def _fix_single_vulnerability(
         self,
         vuln: Vulnerability
     ) -> PatchResult:
@@ -206,7 +217,7 @@ class SmartPatcher:
             ):
                 # Step 4: 调用 Tier-3 模型生成补丁
                 logger.info("🤖 调用 Tier-3 模型生成补丁...")
-                llm_output = self._generate_patch(vuln, source_code)
+                llm_output = await self._generate_patch(vuln, source_code)
 
                 # Step 5: 在内存中合并补丁
                 logger.info("🔧 在内存中合并补丁...")
@@ -261,7 +272,7 @@ class SmartPatcher:
                 error_message=f"未知错误: {e}"
             )
 
-    def _generate_patch(
+    async def _generate_patch(
         self,
         vuln: Vulnerability,
         file_content: str
@@ -276,16 +287,12 @@ class SmartPatcher:
         Returns:
             LLM 输出（包含 SEARCH/REPLACE 块）
         """
-        # 延迟初始化 Tier-3 客户端
-        if self.tier3_client is None:
-            self.tier3_client = self.llm_factory.create_tier3_client()
-
         # 构建 Prompt
         prompt = self._build_patch_prompt(vuln, file_content)
 
-        # 调用 LLM
+        # 🔥 调用 Tier-3 LLM（异步 + 结构化输出）
         try:
-            response = self.tier3_client.generate(
+            response = await self.tier3_client.chat(
                 prompt=prompt,
                 system_prompt=(
                     "你是一个资深的底层安全修补专家。\n"
@@ -301,12 +308,14 @@ class SmartPatcher:
                     "3. 绝对不允许输出任何解释、寒暄或 Markdown 标记\n"
                     "4. 不要添加任何额外的文字说明\n"
                     "5. 确保生成的代码语法正确\n"
-                    "6. 保持原代码的缩进风格"
+                    "6. 保持原代码的缩进风格\n"
+                    "7. 如果需要多个修改，输出多个 SEARCH/REPLACE 块"
                 ),
                 max_tokens=4000,
                 temperature=0.2  # 低温度，减少幻觉
             )
 
+            logger.success("✅ Tier-3 模型已返回补丁")
             return response
 
         except Exception as e:
