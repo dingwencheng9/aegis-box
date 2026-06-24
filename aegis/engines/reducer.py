@@ -300,34 +300,67 @@ class ArchitectureReducer:
             FileSummary: 文件摘要（失败时返回 FAILED 状态）
         """
         async with self.semaphore:  # 并发背压控制
-            try:
-                # 构建 Prompt
-                prompt = self._build_file_analysis_prompt(skeleton)
+            # 🆕 文件级重试装甲（3 次重试 + 指数退避）
+            max_file_retries = 3
+            base_delay = 2.0  # 初始等待 2 秒
 
-                # 调用 Tier-1 模型
-                summary = await self.tier1_client.chat(
-                    prompt=prompt,
-                    response_model=FileSummary,
-                    system_prompt="你是一个代码审查专家，专注于发现潜在问题和架构缺陷",
-                    temperature=0.3,
-                    max_tokens=4096,  # 增加到 4096 以避免复杂文件被截断
-                )
+            for retry_attempt in range(max_file_retries):
+                try:
+                    # 构建 Prompt
+                    prompt = self._build_file_analysis_prompt(skeleton)
 
-                logger.success(f"✅ 分析成功: {skeleton.file_path}")
+                    # 调用 Tier-1 模型
+                    summary = await self.tier1_client.chat(
+                        prompt=prompt,
+                        response_model=FileSummary,
+                        system_prompt="你是一个代码审查专家，专注于发现潜在问题和架构缺陷",
+                        temperature=0.3,
+                        max_tokens=4096,  # 增加到 4096 以避免复杂文件被截断
+                    )
 
-                # 兼容部分未返回路径的模型：强制设置 file_path
-                summary.file_path = str(skeleton.file_path)
-                return summary
+                    logger.success(f"✅ 分析成功: {skeleton.file_path}")
 
-            except Exception as e:
-                # 强隔离容错：单个文件失败不影响整体
-                logger.error(f"❌ 分析失败: {skeleton.file_path} - {e}")
-                return FileSummary(
-                    file_path=str(skeleton.file_path),
-                    status=AnalysisStatus.FAILED,
-                    responsibility="分析失败",
-                    error_message=str(e)
-                )
+                    # 兼容部分未返回路径的模型：强制设置 file_path
+                    summary.file_path = str(skeleton.file_path)
+                    return summary
+
+                except Exception as e:
+                    error_str = str(e).lower()
+                    # 判断是否为空响应或网络错误（值得重试）
+                    is_retriable_error = any(pattern in error_str for pattern in [
+                        'eof while parsing',  # 空响应
+                        'empty',  # 空内容
+                        'timeout',  # 超时
+                        'connection',  # 连接问题
+                        'nodename nor servname',  # DNS 错误
+                    ])
+
+                    if is_retriable_error and retry_attempt < max_file_retries - 1:
+                        wait_time = base_delay * (2 ** retry_attempt)  # 指数退避: 2s, 4s, 8s
+                        logger.warning(
+                            f"⚠️ 文件分析失败（第 {retry_attempt + 1}/{max_file_retries} 次）: "
+                            f"{skeleton.file_path} - {e}"
+                        )
+                        logger.info(f"⏳ 等待 {wait_time:.1f}s 后重试...")
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        # 最后一次重试失败，或不可重试错误
+                        logger.error(f"❌ 分析失败（已耗尽重试）: {skeleton.file_path} - {e}")
+                        return FileSummary(
+                            file_path=str(skeleton.file_path),
+                            status=AnalysisStatus.FAILED,
+                            responsibility="分析失败",
+                            error_message=str(e)
+                        )
+
+            # 理论上不会到这里（for-else 保护）
+            return FileSummary(
+                file_path=str(skeleton.file_path),
+                status=AnalysisStatus.FAILED,
+                responsibility="分析失败",
+                error_message="重试耗尽"
+            )
 
     async def analyze_project(
         self,

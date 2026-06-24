@@ -257,9 +257,16 @@ class LLMClient:
                 if api_key:
                     call_params["api_key"] = api_key
 
-                # 如果有自定义端点
+                # 🆕 优先级顺序：配置 endpoint > 配置 api_base > 环境变量
+                api_base = None
                 if self.config.endpoint:
-                    call_params["api_base"] = self.config.endpoint
+                    api_base = self.config.endpoint
+                elif hasattr(self.config, 'api_base') and self.config.api_base:
+                    api_base = self.config.api_base
+
+                if api_base:
+                    call_params["api_base"] = api_base
+                    logger.debug(f"🌐 使用自定义 API Base: {api_base}")
 
                 # 如果需要结构化输出
                 if response_model:
@@ -302,12 +309,15 @@ class LLMClient:
 
             except Exception as e:
                 error_str = str(e).lower()
-                # 判断是否为可重试错误
+                # 🆕 判断是否为可重试错误（包含空响应、DNS 错误）
                 is_retryable = any(pattern in error_str for pattern in [
                     '429', 'rate limit', 'too many requests',
                     '503', 'service unavailable',
                     '502', 'bad gateway',
-                    'timeout', 'connection', 'network'
+                    'timeout', 'connection', 'network',
+                    'eof while parsing',  # 空响应
+                    'nodename nor servname',  # DNS 错误
+                    'cannot connect to host',  # 连接失败
                 ])
 
                 if is_retryable:

@@ -16,6 +16,8 @@ import yaml
 from dotenv import load_dotenv
 from loguru import logger
 
+from aegis.utils.log_sanitizer import sanitize_dict
+
 
 class ConfigLoader:
     """
@@ -212,7 +214,15 @@ class ConfigLoader:
             if "provider" in config:
                 config["api_key_env_var"] = f"{config['provider'].upper()}_API_KEY"
 
-            logger.debug(f"🔧 从环境变量构建 {tier} 配置: {config}")
+                # 🆕 API Base URL 支持（用于代理或自定义端点）
+                api_base_key = f"{config['provider'].upper()}_API_BASE"
+                api_base = os.getenv(api_base_key)
+                if api_base:
+                    config["api_base"] = api_base
+                    logger.debug(f"🌐 检测到自定义 API Base: {api_base_key}")
+
+            # 🔒 安全日志：使用脱敏工具
+            logger.debug(f"🔧 从环境变量构建 {tier} 配置: {sanitize_dict(config)}")
             return config
 
         # 优先级 2: 从 aegis.yaml 读取
