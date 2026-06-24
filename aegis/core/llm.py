@@ -344,6 +344,44 @@ class LLMClient:
         # 所有重试都失败
         raise last_error or LLMAPIError("未知错误")
 
+    def _preprocess_glm_response(self, text: str) -> str:
+        """
+        🔧 Phase 3: GLM 响应预清理（消灭 Fallback）
+
+        优化亮点：
+        - 移除 Markdown 标记（```json```）
+        - 修复 Python 字面量（None/True/False → null/true/false）
+        - 轻量级，< 1ms
+
+        Args:
+            text: 原始响应文本
+
+        Returns:
+            清理后的 JSON 文本
+        """
+        import re
+
+        # 清理 Markdown 标记
+        cleaned = text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+
+        # 🔥 修复 Python 字面量（关键优化）
+        # 使用正则确保只替换值位置的字面量
+        cleaned = re.sub(r':\s*None\b', ': null', cleaned)
+        cleaned = re.sub(r',\s*None\b', ', null', cleaned)
+        cleaned = re.sub(r':\s*True\b', ': true', cleaned)
+        cleaned = re.sub(r',\s*True\b', ', true', cleaned)
+        cleaned = re.sub(r':\s*False\b', ': false', cleaned)
+        cleaned = re.sub(r',\s*False\b', ', false', cleaned)
+
+        return cleaned
+
     async def _fallback_structured_output(
         self,
         messages: list,
@@ -387,22 +425,8 @@ class LLMClient:
         response = await litellm.acompletion(**call_params_copy)
         content = response.choices[0].message.content
 
-        # 清理可能的 markdown 代码块标记
-        content = content.strip()
-        if content.startswith("```json"):
-            content = content[7:]
-        if content.startswith("```"):
-            content = content[3:]
-        if content.endswith("```"):
-            content = content[:-3]
-        content = content.strip()
-
-        # 🔧 修复 Python 字面量 → JSON 标准
-        # GLM 有时返回 Python 语法（None, True, False）而非 JSON（null, true, false）
-        content = content.replace(": None", ": null")
-        content = content.replace(":None", ":null")
-        content = content.replace(": True", ": true")
-        content = content.replace(": False", ": false")
+        # 🔥 Phase 3: 使用预清理函数（统一处理）
+        content = self._preprocess_glm_response(content)
 
         # 解析 JSON
         try:

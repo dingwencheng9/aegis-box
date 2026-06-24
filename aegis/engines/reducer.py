@@ -281,10 +281,16 @@ class ArchitectureReducer:
         self.tier1_client = factory.create_tier1_client()
         self.tier2_client = factory.create_tier2_client()
 
-        # 并发控制
-        self.semaphore = asyncio.Semaphore(max_concurrent)
+        # 🔥 Phase 4: 动态并发控制
+        from aegis.core.adaptive_concurrency import AdaptiveConcurrencyController
+        self.concurrency_controller = AdaptiveConcurrencyController(
+            initial_concurrency=max_concurrent,
+            min_concurrency=3,
+            max_concurrency=max_concurrent * 2,
+        )
+        self.semaphore = self.concurrency_controller.get_semaphore()
 
-        logger.info(f"ArchitectureReducer 初始化完成 (max_concurrent={max_concurrent})")
+        logger.info(f"ArchitectureReducer 初始化完成 (max_concurrent={max_concurrent}, adaptive=True)")
 
     async def analyze_file(
         self,
@@ -320,20 +326,31 @@ class ArchitectureReducer:
 
                     logger.success(f"✅ 分析成功: {skeleton.file_path}")
 
+                    # 🔥 Phase 4: 成功回调（动态增加并发）
+                    await self.concurrency_controller.on_success()
+
                     # 兼容部分未返回路径的模型：强制设置 file_path
                     summary.file_path = str(skeleton.file_path)
                     return summary
 
                 except Exception as e:
                     error_str = str(e).lower()
-                    # 判断是否为空响应或网络错误（值得重试）
-                    is_retriable_error = any(pattern in error_str for pattern in [
-                        'eof while parsing',  # 空响应
-                        'empty',  # 空内容
-                        'timeout',  # 超时
-                        'connection',  # 连接问题
-                        'nodename nor servname',  # DNS 错误
-                    ])
+                    error_type = type(e).__name__.lower()
+
+                    # 🔥 Phase 4: 速率限制回调（动态减少并发）
+                    if 'ratelimiterror' in error_type or 'rate limit' in error_str or '速率限制' in error_str:
+                        await self.concurrency_controller.on_rate_limit()
+                        # 速率限制始终重试
+                        is_retriable_error = True
+                    else:
+                        # 判断是否为空响应或网络错误（值得重试）
+                        is_retriable_error = any(pattern in error_str for pattern in [
+                            'eof while parsing',  # 空响应
+                            'empty',  # 空内容
+                            'timeout',  # 超时
+                            'connection',  # 连接问题
+                            'nodename nor servname',  # DNS 错误
+                        ])
 
                     if is_retriable_error and retry_attempt < max_file_retries - 1:
                         wait_time = base_delay * (2 ** retry_attempt)  # 指数退避: 2s, 4s, 8s
