@@ -128,10 +128,13 @@ class AegisOrchestrator:
             config: Aegis 配置（默认从文件加载）
         """
         self.repo_path = repo_path or Path.cwd()
-        self.config = config or AegisConfig(
-            ignore_dirs=[".git", "node_modules", "__pycache__", "venv", ".venv", "dist", "build"],
-            ignore_extensions=[".pyc", ".pyo", ".log", ".tmp", ".swp"],
-        )
+
+        # 🔥 修复：如果没有传入配置，从文件加载
+        if config is None:
+            from aegis.cli import ConfigManager
+            self.config = ConfigManager.load(self.repo_path)
+        else:
+            self.config = config
 
         # 状态文件路径
         self.artifacts_dir = self.repo_path / "artifacts"
@@ -332,6 +335,9 @@ class AegisOrchestrator:
             # 从配置读取并发数
             tier1_config = self.config.llm.get("tier1_fast", {})
             max_concurrent = getattr(tier1_config, 'max_concurrent', 3)  # 默认 3
+
+            logger.info(f"📊 配置读取: tier1_config={tier1_config}")
+            logger.info(f"📊 并发数: max_concurrent={max_concurrent}")
 
             reducer = ArchitectureReducer(
                 config=self.config,

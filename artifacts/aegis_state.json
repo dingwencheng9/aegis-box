@@ -1,18 +1,18 @@
 {
-  "session_id": "20260624-092007",
-  "start_time": "2026-06-24T09:20:07.782761",
+  "session_id": "20260624-092731",
+  "start_time": "2026-06-24T09:27:31.690681",
   "end_time": null,
   "steps": [
     {
       "step_name": "sweep",
       "state": "success",
-      "start_time": "2026-06-24T09:20:07.782806",
-      "end_time": "2026-06-24T09:20:08.823232",
+      "start_time": "2026-06-24T09:27:31.690724",
+      "end_time": "2026-06-24T09:27:32.241235",
       "error_message": null,
       "artifacts": {
-        "files_scanned": 141,
+        "files_scanned": 142,
         "files_cleaned": 0,
-        "space_freed_mb": 309.93451404571533
+        "space_freed_mb": 309.94290828704834
       }
     }
   ],
