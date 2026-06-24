@@ -329,9 +329,13 @@ class AegisOrchestrator:
             # 🔥 Step 2: 调用双轨架构分析器（Tier-1 + Tier-2）
             from aegis.engines.reducer import ArchitectureReducer
 
+            # 从配置读取并发数
+            tier1_config = self.config.llm.get("tier1_fast", {})
+            max_concurrent = getattr(tier1_config, 'max_concurrent', 3)  # 默认 3
+
             reducer = ArchitectureReducer(
                 config=self.config,
-                max_concurrent=10  # 并发控制
+                max_concurrent=max_concurrent  # 🔥 使用配置值
             )
 
             # 异步分析项目
