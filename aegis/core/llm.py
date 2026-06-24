@@ -309,16 +309,25 @@ class LLMClient:
 
             except Exception as e:
                 error_str = str(e).lower()
-                # 🆕 判断是否为可重试错误（包含空响应、DNS 错误）
-                is_retryable = any(pattern in error_str for pattern in [
-                    '429', 'rate limit', 'too many requests',
-                    '503', 'service unavailable',
-                    '502', 'bad gateway',
-                    'timeout', 'connection', 'network',
-                    'eof while parsing',  # 空响应
-                    'nodename nor servname',  # DNS 错误
-                    'cannot connect to host',  # 连接失败
-                ])
+                error_type = type(e).__name__.lower()
+
+                # 🆕 判断是否为可重试错误（包含空响应、DNS 错误、速率限制）
+                is_retryable = (
+                    # 检查错误类型
+                    'ratelimiterror' in error_type or
+                    'timeouterror' in error_type or
+                    # 检查错误消息
+                    any(pattern in error_str for pattern in [
+                        '429', 'rate limit', 'too many requests',
+                        '速率限制',  # 🔥 中文速率限制
+                        '503', 'service unavailable',
+                        '502', 'bad gateway',
+                        'timeout', 'connection', 'network',
+                        'eof while parsing',  # 空响应
+                        'nodename nor servname',  # DNS 错误
+                        'cannot connect to host',  # 连接失败
+                    ])
+                )
 
                 if is_retryable:
                     logger.warning(f"第 {attempt + 1} 次调用失败（可重试）: {self.model_id} - {e}")
